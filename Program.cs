@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Identity.UI;
 using POS_OS_GG.Areas.Identity;
 using POS_OS_GG.Data;
 using POS_GG_APP.Data;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,8 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddSignInManager()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
+
+builder.Services.AddMudServices();
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();

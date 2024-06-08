@@ -1,8 +1,9 @@
 ﻿@page "/"
-@inject IToastService ToastService
+@inject ISnackbar Snackbar
 
-
-<button class="btn btn-primary" @onclick="@(()=>ToastService.ShowSuccess("This is a success"))" >Click me</button>
+<MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="@(() => Snackbar.Add("Simple Snackbar"))">
+    Open Snackbar
+</MudButton>
 
 <PageTitle>Index</PageTitle>
 
