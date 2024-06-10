@@ -15,6 +15,8 @@ using POS_OS_GG.Areas.Identity;
 using POS_OS_GG.Data;
 using POS_GG_APP.Data;
 using MudBlazor.Services;
+using POS_OS_GG.Services;
+using MudBlazor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,14 +44,18 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config => config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.BottomRight);
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
 
+builder.Services.AddSingleton<GlobalManager>();
+
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredToast();
+
+builder.Services.AddScoped<UserManagerService>();
 
 var app = builder.Build();
 

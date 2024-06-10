@@ -9,6 +9,8 @@ namespace POS_OS_GG.Data
         {
         }
 
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ApplicationUser>().HasIndex(x => x.CompanyId).IsUnique();

@@ -1,4 +1,6 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles ="Administrator,Manager")]
 
 <MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider />
@@ -13,9 +15,9 @@
         <MudNavMenu>
             <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
             <MudNavLink Href="/servers" Match="NavLinkMatch.Prefix">Servers</MudNavLink>
-            <MudNavGroup Title="Settings" Expanded="true">
-                <MudNavLink Href="/users" Match="NavLinkMatch.Prefix">Users</MudNavLink>
-                <MudNavLink Href="/security" Match="NavLinkMatch.Prefix">Security</MudNavLink>
+            <MudNavGroup Title="User Manager" Expanded="true">
+                <MudNavLink Href="/admin/user-manager" Match="NavLinkMatch.Prefix">User List</MudNavLink>
+                <MudNavLink Href="/admin/new-user" Match="NavLinkMatch.Prefix">New User</MudNavLink>
             </MudNavGroup>
             <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink>
         </MudNavMenu>

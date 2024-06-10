@@ -1,0 +1,159 @@
+﻿@page "/admin/user-manager"
+@using POS_GG_APP
+@using POS_OS_GG.Models.ViewModels
+@inject UserManagerService UserManagerService
+@inject GlobalManager GlobalManager
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudTable Items="@filteredApplicationUsers" Dense="false" Hover="true" Bordered="true" Striped="false" Filter="FilterFunc1" @bind-SelectedItem="selectedItem">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">User Manager</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="searchString1" Placeholder="Find User" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" OnInput="UpdateFilter"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh Style="width:200px"><MudTableSortLabel SortBy="new Func<UserInfo, object>(x=>x.CompanyId)">Company ID</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<UserInfo, object>(x=>x.Name)">Name</MudTableSortLabel></MudTh>
+        <MudTh><MudTableSortLabel SortBy="new Func<UserInfo, object>(x=>x.Role)">Role</MudTableSortLabel></MudTh>
+        <MudTh style="width: 200px;">Actions</MudTh> <!-- Set fixed width for actions column -->
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Company Id">@context.CompanyId</MudTd>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Role">@context.Role</MudTd>
+        <MudTd DataLabel="Actions">
+            <!-- Added Actions buttons -->
+            @if(context.Role != Roles.Administrator)
+            {
+                <MudButton Color="Color.Tertiary" OnClick="() => EditUser(context)" Style="margin-right: 4px; width:50px !important;"><i class="fa-solid fa-user-pen"></i></MudButton>
+                <MudButton Color="Color.Error" OnClick="() => DeleteUser(context)"><i class="fa-solid fa-user-slash"></i></MudButton>
+            }
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager />
+        <MudButton Class="float-end mt-2" Color="Color.Success" @onclick="CreateNewUser">Add User</MudButton>
+    </PagerContent>
+</MudTable>
+
+<MudMessageBox @ref="_mudMessageBox">
+    <MessageContent>
+        Are you sure you want to delete @selectedUser.Name?
+    </MessageContent>
+    <YesButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.DeleteForever">Delete!</MudButton>
+    </YesButton>
+    <NoButton>
+        <MudButton Variant="Variant.Filled" Class="m-1" Color="Color.Surface" StartIcon="@Icons.Material.Filled.Cancel">Cancel</MudButton>
+    </NoButton>
+</MudMessageBox>
+
+<MudMessageBox @ref="_mmbNewUser" >
+   
+    <YesButton>
+
+    </YesButton>
+   
+    <MessageContent>
+        <NewUser OnButtonClicked="NewUserRegistrationClicked"/>
+    </MessageContent>
+</MudMessageBox>
+
+@code {
+    private string searchString1 = "";
+    private HashSet<UserInfo> ApplicationUsers = new HashSet<UserInfo>();
+    private IEnumerable<UserInfo> filteredApplicationUsers;
+
+    private UserInfo selectedItem;
+    private UserInfo selectedUser;
+
+    MudMessageBox _mudMessageBox { get; set; }
+    MudMessageBox _mmbNewUser { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var users = await UserManagerService.GetUsersAsync();
+        ApplicationUsers = new HashSet<UserInfo>(users);
+        UpdateFilter();
+
+        GlobalManager.UserEvents.OnUsersChange += UpdateUsersList;
+
+    }
+
+    void UpdateUsersList()
+    {
+        ApplicationUsers = GlobalManager.Users;
+        UpdateFilter();
+        InvokeAsync(StateHasChanged);
+    }
+
+    void DeleteUserEventUpdate(string id)
+    {
+        var user = ApplicationUsers.FirstOrDefault(x => x.Id == id);
+        if(user != null)
+            ApplicationUsers.Remove(user);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateFilter()
+    {
+        filteredApplicationUsers = ApplicationUsers.Where(user => FilterFunc(user, searchString1));
+    }
+
+    private bool FilterFunc1(UserInfo user) => FilterFunc(user, searchString1);
+
+    private bool FilterFunc(UserInfo user, string searchString)
+    {
+        if (user.Name != null && user.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (user.CompanyId.ToString().Contains(searchString))
+            return true;
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (user.Role != null && user.Role.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private async void EditUser(UserInfo user)
+    {
+        selectedUser = user;
+        bool? result = await _mudMessageBox.Show();
+        StateHasChanged();
+    }
+
+    private async void DeleteUser(UserInfo user)
+    {
+        selectedUser = user;
+        bool? result = await _mudMessageBox.Show();
+
+        if (result.HasValue && result.Value && await UserManagerService.DeleteUserAsync(user.Id))
+        {
+            Snackbar.Add($"{user.Name} has been deleted", Severity.Success);
+            UpdateFilter();
+            StateHasChanged();
+        };
+
+    }
+
+    async Task CreateNewUser()
+    {
+        bool? result = await _mmbNewUser.Show();
+    }
+
+    async Task NewUserRegistrationClicked(bool success)
+    {
+        if(success)
+            Snackbar.Add("User registered successfully!", Severity.Success);
+
+        _mmbNewUser.Close();
+    }
+
+    //implement IDisposable to remove event handler
+    public void Dispose()
+    {
+        GlobalManager.UserEvents.OnUsersChange -= UpdateUsersList;
+    }
+}
