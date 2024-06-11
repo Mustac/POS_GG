@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Internal;
+using MudBlazor;
 using POS_GG_APP.Data;
 using POS_OS_GG.Data;
+using POS_OS_GG.Helpers;
 using POS_OS_GG.Models.ViewModels;
 
 namespace POS_OS_GG.Services
@@ -12,67 +14,131 @@ namespace POS_OS_GG.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly GlobalManager _globalManager;
+        private readonly ResponseCreator response;
 
-        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager)
+        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar)
         {
             _appDbContext = appDbContext;
             _userManager = userManager;
             _roleManager = roleManager;
             _globalManager = globalManager;
+            response = new ResponseCreator(snackbar);
         }
 
-        // get all users
-       public async Task<HashSet<UserInfo>> GetUsersAsync()
+        /// <summary>
+        /// Get all the Users and save it to Users object for catching
+        /// </summary>
+        /// <returns></returns>
+        public async Task<RequestResponse<HashSet<UserInfo>>> GetUsersAsync()
         {
-            if(_globalManager.Users is null)
-               _globalManager.Users = await UpdateGlobalUserList();
-
-            return _globalManager.Users;
-        }
-
-        public async Task<bool> DeleteUserAsync(string userId)
-        {
-            var user = await _userManager.FindByIdAsync(userId);
-
-            if (user == null)
-                return false;
-
-            var result = await _userManager.DeleteAsync(user);
-
-            if (!result.Succeeded)
-                return false;
-
-            _globalManager.Users = await UpdateGlobalUserList();
-            _globalManager.UserEvents.OnUsersChange?.Invoke();
-
-            return result.Succeeded;
-        }
-
-        public async Task<bool> CreateUserAsync(UserRegistration userRegistration)
-        {
-            //create user and to the database
-            var newUser = new ApplicationUser
+            try
             {
-                UserName = userRegistration.Name,
-                CompanyId = userRegistration.CompanyId.Value,
-            };
+                if (_globalManager.Users is null)
+                    _globalManager.Users = await UpdateGlobalUserList();
 
-            var result = await _userManager.CreateAsync(newUser, userRegistration.Password);
-
-            if (!result.Succeeded)
-                return false;
-            
-            var resultSuccess = await _userManager.AddToRoleAsync(await _userManager.GetUserByCompanyId(userRegistration.CompanyId.Value), userRegistration.Role);
-
-            if (!resultSuccess.Succeeded)
-                return false;
-
-            _globalManager.Users = await UpdateGlobalUserList();
-            _globalManager.UserEvents.OnUsersChange?.Invoke();
-
-            return true;
+                return response.Success(_globalManager.Users, notification:false);
+            }
+            catch
+            {
+                return response.ServerError<HashSet<UserInfo>>();
+            }
         }
 
+        /// <summary>
+        /// Deletes a user identified by the provided userId and triggers a user change event.
+        /// </summary>
+        /// <param name="userId">The ID of the user to be deleted.</param>
+        /// <returns>A Task representing the asynchronous operation, containing a RequestResponse indicating the result of the deletion.</returns>
+        public async Task<RequestResponse> DeleteUserAsync(string userId)
+        {
+            try
+            {
+                // Find the user by their ID
+                var user = await _userManager.FindByIdAsync(userId);
+
+                // Check if the user exists
+                if (user == null)
+                {
+                    return response.Fail("User could not be found", notification: false);
+                }
+
+                // Attempt to delete the user
+                var deleteResult = await _userManager.DeleteAsync(user);
+
+                // Check if the deletion was successful
+                if (!deleteResult.Succeeded)
+                {
+                    return response.Fail("User could not be deleted", notification: false);
+                }
+
+                // Update the global user list and trigger the user change event
+                _globalManager.Users = await UpdateGlobalUserList();
+                _globalManager.UserEvents.OnUsersChange?.Invoke();
+
+                return response.Success("User has been deleted", notification: false);
+            }
+            catch
+            {
+                return response.ServerError();
+            }
+        }
+
+
+        /// <summary>
+        /// Create a new user and triggers a user change event.
+        /// </summary>
+        /// <param name="userRegistration"></param>
+        /// <returns></returns>
+        public async Task<RequestResponse> CreateUserAsync(UserRegistration userRegistration)
+        {
+            try
+            {
+                // Check if user already exists by CompanyId
+                var existingUser = await _userManager.FindByCompanyId(userRegistration.CompanyId.Value);
+                if (existingUser != null)
+                {
+                    return response.Fail("User already exists", notification: true);
+                }
+
+                // Create new user
+                var newUser = new ApplicationUser
+                {
+                    UserName = userRegistration.Name,
+                    CompanyId = userRegistration.CompanyId.Value,
+                };
+
+                var createResult = await _userManager.CreateAsync(newUser, userRegistration.Password);
+                if (!createResult.Succeeded)
+                {
+                    return response.Fail("Unable to create user", notification: true);
+                }
+
+                // Add user to the specified role
+                var addToRoleResult = await _userManager.AddToRoleAsync(newUser, userRegistration.Role);
+                if (!addToRoleResult.Succeeded)
+                {
+                    // If adding to role fails, delete the newly created user
+                    await _userManager.DeleteAsync(newUser);
+                    return response.Fail("Unable to add user to a role", notification: true);
+                }
+
+                // Update global user list and trigger user change event
+                _globalManager.Users = await UpdateGlobalUserList();
+                _globalManager.UserEvents.OnUsersChange?.Invoke();
+
+                return response.Success("User creation was successful", notification: true);
+            }
+            catch
+            {
+                return response.ServerError();
+            }
+        }
+
+
+        /// <summary>
+        /// Retrives all the Users and parse it to HashSet<UserInfo>
+        /// </summary>
+        /// <returns></returns>
         private async Task<HashSet<UserInfo>> UpdateGlobalUserList()
         {
             var users = (await _appDbContext.UserRoles

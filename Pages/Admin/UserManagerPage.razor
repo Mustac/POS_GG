@@ -3,7 +3,6 @@
 @using POS_OS_GG.Models.ViewModels
 @inject UserManagerService UserManagerService
 @inject GlobalManager GlobalManager
-@inject ISnackbar Snackbar
 @implements IDisposable
 
 <MudTable Items="@filteredApplicationUsers" Dense="false" Hover="true" Bordered="true" Striped="false" Filter="FilterFunc1" @bind-SelectedItem="selectedItem">
@@ -55,7 +54,7 @@
 
     </YesButton>
    
-    <MessageContent>
+    <MessageContent >
         <NewUser OnButtonClicked="NewUserRegistrationClicked"/>
     </MessageContent>
 </MudMessageBox>
@@ -74,8 +73,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var users = await UserManagerService.GetUsersAsync();
-        ApplicationUsers = new HashSet<UserInfo>(users);
+        var userResponse = await UserManagerService.GetUsersAsync();
+
+        if(userResponse.IsSuccess)
+            ApplicationUsers = new HashSet<UserInfo>(userResponse.Data);
+
         UpdateFilter();
 
         GlobalManager.UserEvents.OnUsersChange += UpdateUsersList;
@@ -129,9 +131,9 @@
         selectedUser = user;
         bool? result = await _mudMessageBox.Show();
 
-        if (result.HasValue && result.Value && await UserManagerService.DeleteUserAsync(user.Id))
+        if (result.HasValue && result.Value)
         {
-            Snackbar.Add($"{user.Name} has been deleted", Severity.Success);
+            var response = await UserManagerService.DeleteUserAsync(user.Id);
             UpdateFilter();
             StateHasChanged();
         };
@@ -145,9 +147,6 @@
 
     async Task NewUserRegistrationClicked(bool success)
     {
-        if(success)
-            Snackbar.Add("User registered successfully!", Severity.Success);
-
         _mmbNewUser.Close();
     }
 

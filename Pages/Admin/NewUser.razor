@@ -1,37 +1,38 @@
 ﻿@using POS_GG_APP
 @using POS_OS_GG.Models.ViewModels
-@inject ISnackbar Snackbar
 @using MudBlazor
 @using System.ComponentModel.DataAnnotations
 @inject UserManagerService UserManagerService
 @inject AuthenticationStateProvider AuthStateProvider
 
 <AuthorizeView Context="UserState">
-    <EditForm Model="@user" OnValidSubmit="HandleValidSubmit">
-        <DataAnnotationsValidator />
+    <div style="width:300px">
+        <EditForm Model="@user" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
 
-        <MudText Typo="Typo.h5">Register User</MudText>
+            <MudText Typo="Typo.h5">Register User</MudText>
 
-        <MudNumericField HideSpinButtons="true" TValue="int?" @bind-Value="user.CompanyId" Label="Company ID" Immediate="true" For="@(() => user.CompanyId)" Required="true" />
+            <MudNumericField HideSpinButtons="true" TValue="int?" @bind-Value="user.CompanyId" Label="Company ID" Immediate="true" For="@(() => user.CompanyId)" Required="true" />
 
-        <MudTextField @bind-Value="user.Name" Label="Name" Immediate="true" For="@(() => user.Name)" Required="true" />
-        <MudTextField @bind-Value="user.Password" Label="Password" Immediate="true" For="@(() => user.Password)" Required="true" />
+            <MudTextField @bind-Value="user.Name" Label="Name" Immediate="true" For="@(() => user.Name)" Required="true" />
+            <MudTextField @bind-Value="user.Password" Label="Password" Immediate="true" For="@(() => user.Password)" Required="true" />
 
 
-        <MudSelect T="string" Label="Role" @bind-Value="user.Role" Immediate="true" For="@(() => user.Role)" Required="true">
-            @if (UserState.User.IsInRole(Roles.Administrator))
-            {
-                <MudSelectItem Value="@(Roles.Manager)">@Roles.Manager</MudSelectItem>
-            }
-            <MudSelectItem Value="@(Roles.Kitchen)">@Roles.Kitchen</MudSelectItem>
-            <MudSelectItem Value="@(Roles.Warehouse)">@Roles.Warehouse</MudSelectItem>
-            <MudSelectItem Value="@(Roles.Production)">@Roles.Production</MudSelectItem>
-        </MudSelect>
-        <div class="mt-4 d-flex">
-            <MudButton ButtonType="ButtonType.Button" @onclick="Hide" Class="mr-1" Color="Color.Surface" Variant="Variant.Filled" FullWidth="true">Close</MudButton>
-            <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Warning" FullWidth="true">Register</MudButton>
-        </div>
-    </EditForm>
+            <MudSelect T="string" Label="Role" @bind-Value="user.Role" Immediate="true" For="@(() => user.Role)" Required="true">
+                @if (UserState.User.IsInRole(Roles.Administrator))
+                {
+                    <MudSelectItem Value="@(Roles.Manager)">@Roles.Manager</MudSelectItem>
+                }
+                <MudSelectItem Value="@(Roles.Kitchen)">@Roles.Kitchen</MudSelectItem>
+                <MudSelectItem Value="@(Roles.Warehouse)">@Roles.Warehouse</MudSelectItem>
+                <MudSelectItem Value="@(Roles.Production)">@Roles.Production</MudSelectItem>
+            </MudSelect>
+            <div class="mt-4 d-flex">
+                <MudButton ButtonType="ButtonType.Button" @onclick="Hide" Class="mr-1" Color="Color.Surface" Variant="Variant.Filled" FullWidth="true">Close</MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Warning" FullWidth="true">Register</MudButton>
+            </div>
+        </EditForm>
+    </div>
 
 </AuthorizeView>
 
@@ -50,12 +51,10 @@
     {
         var result = await UserManagerService.CreateUserAsync(user);
 
-        if(!result){
-            Snackbar.Add("Could not be created", Severity.Error);
-            return;
+        if (result.IsSuccess)
+        {
+            await OnButtonClicked.InvokeAsync(true);
         }
-
-        await OnButtonClicked.InvokeAsync(true);
     }
 
 

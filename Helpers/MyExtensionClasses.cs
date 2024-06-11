@@ -26,7 +26,7 @@ namespace POS_GG_APP.Data
             }
         }
 
-        public static async Task<ApplicationUser> GetUserByCompanyId(this UserManager<ApplicationUser> userManager, int companyId) => await userManager.Users.SingleOrDefaultAsync(u => u.CompanyId == companyId);
+        public static async Task<ApplicationUser> FindByCompanyId(this UserManager<ApplicationUser> userManager, int companyId) => await userManager.Users.SingleOrDefaultAsync(u => u.CompanyId == companyId);
 
     }
 }

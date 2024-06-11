@@ -1,6 +1,7 @@
-﻿@inherits LayoutComponentBase
+﻿@using POS_GG_APP
+@inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
-@attribute [Authorize(Roles ="Administrator,Manager")]
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider />
@@ -15,10 +16,7 @@
         <MudNavMenu>
             <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
             <MudNavLink Href="/servers" Match="NavLinkMatch.Prefix">Servers</MudNavLink>
-            <MudNavGroup Title="User Manager" Expanded="true">
                 <MudNavLink Href="/admin/user-manager" Match="NavLinkMatch.Prefix">User List</MudNavLink>
-                <MudNavLink Href="/admin/new-user" Match="NavLinkMatch.Prefix">New User</MudNavLink>
-            </MudNavGroup>
             <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink>
         </MudNavMenu>
     </MudDrawer>
@@ -30,6 +28,27 @@
 </MudLayout>
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        var userState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+        if(userState is null || userState.User is null || userState.User.Identity is null)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+        if(!userState.User.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+        if (!userState.User.IsInRole(Roles.Administrator) || !userState.User.IsInRole(Roles.Manager))
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+    }
+
     bool _drawerOpen = true;
 
     void DrawerToggle()
