@@ -1,0 +1,69 @@
+﻿@using POS_GG_APP
+@using POS_OS_GG.Models.ViewModels
+@using MudBlazor
+@using System.ComponentModel.DataAnnotations
+@inject UserManagerService UserManagerService
+@inject AuthenticationStateProvider AuthStateProvider
+
+<AuthorizeView Context="UserState">
+    <div style="width:300px">
+        <EditForm @ref="@EditForm" Model="@UserUpdate" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+
+            <MudText Typo="Typo.h5">Update User</MudText>
+
+            <MudNumericField HideSpinButtons="true" TValue="int?" @bind-Value="UserUpdate.CompanyId" Label="Company ID" Immediate="true" For="@(() => UserUpdate.CompanyId)" Required="true" />
+
+            <MudTextField @bind-Value="UserUpdate.Name" Label="Name" Immediate="true" For="@(() => UserUpdate.Name)" Required="true" />
+
+            <MudSelect T="string" Label="Role" @bind-Value="UserUpdate.Role" Immediate="true" For="@(() => UserUpdate.Role)" Required="true">
+                @if (UserState.User.IsInRole(Roles.Administrator))
+                {
+                    <MudSelectItem Value="@(Roles.Manager)">@Roles.Manager</MudSelectItem>
+                }
+                <MudSelectItem Value="@(Roles.Kitchen)">@Roles.Kitchen</MudSelectItem>
+                <MudSelectItem Value="@(Roles.Warehouse)">@Roles.Warehouse</MudSelectItem>
+                <MudSelectItem Value="@(Roles.Production)">@Roles.Production</MudSelectItem>
+            </MudSelect>
+            <div class="mt-4 d-flex">
+                <MudButton ButtonType="ButtonType.Button" @onclick="Hide" Class="mr-1" Color="Color.Surface" Variant="Variant.Filled" FullWidth="true">Close</MudButton>
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Info" FullWidth="true">Update</MudButton>
+            </div>
+            <div class="mt-5 bg-dark p-3 rounded">
+                <MudTooltip Text="Enable / Disable Password Change">
+                    <MudCheckBox DisableRipple="true" Dense="true" Class="m-0 p-0" @bind-Value="UserUpdate.PasswordChange">Change Password</MudCheckBox>
+                </MudTooltip>
+                @if(UserUpdate.PasswordChange){
+                    <MudTextField @bind-Value="UserUpdate.Password" Label="Password" Immediate="true" For="@(() => UserUpdate.Password)" Required="true" />
+                }
+            </div>
+
+        </EditForm>
+    </div>
+
+</AuthorizeView>
+
+
+@code {
+    [Parameter]
+    public UserEdit UserUpdate { get; set; } = new UserEdit();
+
+    EditForm EditForm;
+
+    [Parameter]
+    public EventCallback<bool> OnButtonClicked { get; set; }
+
+
+    private async Task HandleValidSubmit()
+    {
+        var result = await UserManagerService.UpdateAsync(UserUpdate);
+
+        if (result.IsSuccess)
+        {
+            await OnButtonClicked.InvokeAsync(true);
+        }
+    }
+
+
+    void Hide() => OnButtonClicked.InvokeAsync(false);
+}

@@ -1,0 +1,30 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SignInManager<ApplicationUser> SignInManager
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+
+            var user = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User;
+
+            if(user is null || user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                NavigationManager.NavigateTo("/login");
+            };
+
+            await SignInManager.SignOutAsync();
+            NavigationManager.NavigateTo("/login");
+
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+
+    }
+}

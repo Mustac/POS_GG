@@ -49,7 +49,7 @@ namespace POS_OS_GG.Services
         /// </summary>
         /// <param name="userId">The ID of the user to be deleted.</param>
         /// <returns>A Task representing the asynchronous operation, containing a RequestResponse indicating the result of the deletion.</returns>
-        public async Task<RequestResponse> DeleteUserAsync(string userId)
+        public async Task<RequestResponse> DeleteAsync(string userId)
         {
             try
             {
@@ -89,7 +89,8 @@ namespace POS_OS_GG.Services
         /// </summary>
         /// <param name="userRegistration"></param>
         /// <returns></returns>
-        public async Task<RequestResponse> CreateUserAsync(UserRegistration userRegistration)
+        // Creates a new user and updates the user's role
+        public async Task<RequestResponse> CreateAsync(UserRegistration userRegistration)
         {
             try
             {
@@ -127,6 +128,67 @@ namespace POS_OS_GG.Services
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
                 return response.Success("User creation was successful", notification: true);
+            }
+            catch
+            {
+                return response.ServerError();
+            }
+        }
+
+
+        /// <summary>
+        /// Updates the role of a user and triggers a user change event.
+        /// </summary>
+        /// <param name="user">The user information containing the updated role.</param>
+        /// <returns>A Task representing the asynchronous operation, containing a RequestResponse indicating the result of the update.</returns>
+        // Updates the role of a user and triggers a user change event
+        public async Task<RequestResponse> UpdateAsync(UserEdit user)
+        {
+            try
+            {
+                // Find the user by their ID
+                var userToUpdate = await _userManager.FindByIdAsync(user.Id);
+
+                // Check if the user exists
+                if (userToUpdate == null)
+                {
+                    return response.Fail("User could not be found", notification: false);
+                }
+
+                userToUpdate.UserName = user.Name;
+                userToUpdate.CompanyId = user.CompanyId.Value;
+
+                var result = await _userManager.UpdateAsync(userToUpdate);
+
+                if (!result.Succeeded)
+                {
+                    return response.Fail("Unable to update user", notification: true);
+                }
+
+                // Update the user's role
+                var currentRole = await _userManager.GetRolesAsync(userToUpdate);
+                if (currentRole != null && currentRole.FirstOrDefault() != user.Role)
+                {
+                    var updateRoleResult = await _userManager.RemoveFromRolesAsync(userToUpdate, currentRole);
+
+                    if (!updateRoleResult.Succeeded)
+                    {
+                        return response.Fail("Unable to update user role", notification: true);
+                    }
+
+                    var addToRoleResult = await _userManager.AddToRoleAsync(userToUpdate, user.Role);
+
+                    if (!addToRoleResult.Succeeded)
+                    {
+                        return response.Fail("Unable to update user role", notification: true);
+                    }
+                }
+
+                // Update global user list and trigger user change event
+                _globalManager.Users = await UpdateGlobalUserList();
+                _globalManager.UserEvents.OnUsersChange?.Invoke();
+
+                return response.Success("User role has been updated", notification: true);
             }
             catch
             {

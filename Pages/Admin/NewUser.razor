@@ -49,7 +49,7 @@
 
     private async Task HandleValidSubmit()
     {
-        var result = await UserManagerService.CreateUserAsync(user);
+        var result = await UserManagerService.CreateAsync(user);
 
         if (result.IsSuccess)
         {

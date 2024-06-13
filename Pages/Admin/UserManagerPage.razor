@@ -25,7 +25,7 @@
             <!-- Added Actions buttons -->
             @if(context.Role != Roles.Administrator)
             {
-                <MudButton Color="Color.Tertiary" OnClick="() => EditUser(context)" Style="margin-right: 4px; width:50px !important;"><i class="fa-solid fa-user-pen"></i></MudButton>
+                <MudButton Color="Color.Tertiary" OnClick="() => UpdateUser(context)" Style="margin-right: 4px; width:50px !important;"><i class="fa-solid fa-user-pen"></i></MudButton>
                 <MudButton Color="Color.Error" OnClick="() => DeleteUser(context)"><i class="fa-solid fa-user-slash"></i></MudButton>
             }
         </MudTd>
@@ -49,14 +49,18 @@
 </MudMessageBox>
 
 <MudMessageBox @ref="_mmbNewUser" >
-   
-    <YesButton>
-
-    </YesButton>
-   
+    <YesButton/>
     <MessageContent >
         <NewUser OnButtonClicked="NewUserRegistrationClicked"/>
     </MessageContent>
+</MudMessageBox>
+
+<MudMessageBox @ref="_mmbUpdateUser">
+    <YesButton/>
+    <MessageContent>
+        <UpdateUser UserUpdate="updateUser" OnButtonClicked="UpdatedUserClicked" />
+    </MessageContent>
+
 </MudMessageBox>
 
 @code {
@@ -66,9 +70,12 @@
 
     private UserInfo selectedItem;
     private UserInfo selectedUser;
+    private UserEdit updateUser;
 
     MudMessageBox _mudMessageBox { get; set; }
     MudMessageBox _mmbNewUser { get; set; }
+    MudMessageBox _mmbUpdateUser { get; set; }
+
 
 
     protected override async Task OnInitializedAsync()
@@ -119,10 +126,19 @@
         return false;
     }
 
-    private async void EditUser(UserInfo user)
+    private async void UpdateUser(UserInfo user)
     {
         selectedUser = user;
-        bool? result = await _mudMessageBox.Show();
+
+        updateUser = new UserEdit()
+        {
+            Id = user.Id,
+            CompanyId = user.CompanyId,
+            Name = user.Name,
+            Role = user.Role,
+        };
+
+        bool? result = await _mmbUpdateUser.Show();
         StateHasChanged();
     }
 
@@ -133,7 +149,7 @@
 
         if (result.HasValue && result.Value)
         {
-            var response = await UserManagerService.DeleteUserAsync(user.Id);
+            var response = await UserManagerService.DeleteAsync(user.Id);
             UpdateFilter();
             StateHasChanged();
         };
@@ -148,6 +164,12 @@
     async Task NewUserRegistrationClicked(bool success)
     {
         _mmbNewUser.Close();
+    }
+
+    async Task UpdatedUserClicked(bool success)
+    {
+        updateUser = null;
+        _mmbUpdateUser.Close();
     }
 
     //implement IDisposable to remove event handler

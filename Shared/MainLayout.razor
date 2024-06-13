@@ -9,8 +9,19 @@
 
 <MudLayout>
     <MudAppBar>
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        My Application
+        <div class="d-flex justify-content-between w-100">
+            <div>
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+                Gate Gourmet
+            </div>
+            <div>
+                <MudIconButton Icon="@Icons.Material.Filled.VerifiedUser" Color="Color.Inherit"></MudIconButton>
+                <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit"></MudIconButton>
+                <MudTooltip Text="Logout">
+                    <MudIconButton Href="/logout" Icon="@Icons.Material.Filled.Logout" Color="Color.Error"></MudIconButton>
+                </MudTooltip>
+            </div>
+        </div>
     </MudAppBar>
     <MudDrawer @bind-Open="@_drawerOpen">
         <MudNavMenu>
@@ -31,21 +42,19 @@
     protected override async Task OnInitializedAsync()
     {
         var userState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var role = userState.User.Claims.FirstOrDefault(x => x.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")?.Value;
 
-        if(userState is null || userState.User is null || userState.User.Identity is null)
+        if ((userState is null || userState.User is null || userState.User.Identity is null) || !userState.User.Identity.IsAuthenticated)
         {
-            NavigationManager.NavigateTo("/");
+            NavigationManager.NavigateTo("/login");
         }
 
-        if(!userState.User.Identity.IsAuthenticated)
-        {
-            NavigationManager.NavigateTo("/");
-        }
+        bool isAdmin = role == Roles.Administrator;
+        bool isManager = role == Roles.Manager;
 
-        if (!userState.User.IsInRole(Roles.Administrator) || !userState.User.IsInRole(Roles.Manager))
-        {
+
+        if (!isAdmin && !isManager)
             NavigationManager.NavigateTo("/");
-        }
 
     }
 

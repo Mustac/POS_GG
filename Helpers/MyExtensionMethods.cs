@@ -4,7 +4,7 @@ using POS_GG_APP.Models;
 
 namespace POS_GG_APP.Data
 {
-    public static class MyExtensionClasses
+    public static class MyExtensionMethods
     {
         public static string GetName<T>(this T value) where T : Enum  => Enum.GetName(typeof(T), value).ToString();
 
