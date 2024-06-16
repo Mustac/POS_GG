@@ -33,16 +33,14 @@
                 <MudTooltip Text="Enable / Disable Password Change">
                     <MudCheckBox DisableRipple="true" Dense="true" Class="m-0 p-0" @bind-Value="UserUpdate.PasswordChange">Change Password</MudCheckBox>
                 </MudTooltip>
-                @if(UserUpdate.PasswordChange){
+                 @if (UserUpdate.PasswordChange)
+                { 
                     <MudTextField @bind-Value="UserUpdate.Password" Label="Password" Immediate="true" For="@(() => UserUpdate.Password)" Required="true" />
-                }
+                 } 
             </div>
-
         </EditForm>
     </div>
-
 </AuthorizeView>
-
 
 @code {
     [Parameter]
@@ -53,7 +51,6 @@
     [Parameter]
     public EventCallback<bool> OnButtonClicked { get; set; }
 
-
     private async Task HandleValidSubmit()
     {
         var result = await UserManagerService.UpdateAsync(UserUpdate);
@@ -63,7 +60,6 @@
             await OnButtonClicked.InvokeAsync(true);
         }
     }
-
 
     void Hide() => OnButtonClicked.InvokeAsync(false);
 }

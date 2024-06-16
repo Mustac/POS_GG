@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using POS_OS_GG.Models;
 
 namespace POS_GG_APP.Models
 {
@@ -6,6 +7,8 @@ namespace POS_GG_APP.Models
     public class ApplicationUser : IdentityUser
     {
         public int CompanyId { get; set; }
+        public List<Product> Products { get; set; }
+        public List<Order> Orders { get; set; }
     }
 
 }

@@ -111,7 +111,7 @@ namespace POS_OS_GG.Services
                 var createResult = await _userManager.CreateAsync(newUser, userRegistration.Password);
                 if (!createResult.Succeeded)
                 {
-                    return response.Fail("Unable to create user", notification: true);
+                    return response.Fail(createResult.Errors.FirstOrDefault().Description, notification: true);
                 }
 
                 // Add user to the specified role
@@ -157,6 +157,16 @@ namespace POS_OS_GG.Services
 
                 userToUpdate.UserName = user.Name;
                 userToUpdate.CompanyId = user.CompanyId.Value;
+
+                if (user.PasswordChange)
+                {
+                    var passwordRemoveResult = await _userManager.RemovePasswordAsync(userToUpdate);
+                    var passwordSetResult = await _userManager.AddPasswordAsync(userToUpdate, user.Password);
+                    if (!passwordRemoveResult.Succeeded || !passwordSetResult.Succeeded)
+                    {
+                        return response.Fail("Password could not be changed", notification: false);
+                    }
+                }
 
                 var result = await _userManager.UpdateAsync(userToUpdate);
 

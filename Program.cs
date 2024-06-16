@@ -38,6 +38,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequireUppercase = false;
         options.Password.RequiredLength = 4;
+
     })
     .AddRoles<IdentityRole>()
     .AddSignInManager()
