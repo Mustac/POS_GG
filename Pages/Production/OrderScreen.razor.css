@@ -1,0 +1,14 @@
+﻿.autocoplete-filed-position{
+    position:absolute;
+    left:50%;
+    max-width:750px;
+    width:100%;
+    top:300px;
+    transform:translateX(-50%);
+}
+
+@media (max-width: 768px) {
+    .autocoplete-filed-position{
+        top:50px ;
+    }
+}
