@@ -8,21 +8,16 @@ using POS_OS_GG.Models.ViewModels;
 
 namespace POS_OS_GG.Services
 {
-    public class UserManagerService
+    public class UserManagerService : BaseService
     {
-        private readonly ApplicationDbContext _appDbContext;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly GlobalManager _globalManager;
-        private readonly ResponseCreator response;
 
-        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar)
+        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar) 
+            : base(appDbContext, globalManager, snackbar)
         {
-            _appDbContext = appDbContext;
             _userManager = userManager;
             _roleManager = roleManager;
-            _globalManager = globalManager;
-            response = new ResponseCreator(snackbar);
         }
 
         /// <summary>
@@ -36,11 +31,11 @@ namespace POS_OS_GG.Services
                 if (_globalManager.Users is null)
                     _globalManager.Users = await UpdateGlobalUserList();
 
-                return response.Success(_globalManager.Users, notification:false);
+                return _response.Success(_globalManager.Users, notification:false);
             }
             catch
             {
-                return response.ServerError<HashSet<UserInfo>>();
+                return _response.ServerError<HashSet<UserInfo>>();
             }
         }
 
@@ -59,7 +54,7 @@ namespace POS_OS_GG.Services
                 // Check if the user exists
                 if (user == null)
                 {
-                    return response.Fail("User could not be found", notification: false);
+                    return _response.Fail("User could not be found", notification: false);
                 }
 
                 // Attempt to delete the user
@@ -68,18 +63,18 @@ namespace POS_OS_GG.Services
                 // Check if the deletion was successful
                 if (!deleteResult.Succeeded)
                 {
-                    return response.Fail("User could not be deleted", notification: false);
+                    return _response.Fail("User could not be deleted", notification: false);
                 }
 
                 // Update the global user list and trigger the user change event
                 _globalManager.Users = await UpdateGlobalUserList();
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
-                return response.Success("User has been deleted", notification: false);
+                return _response.Success("User has been deleted", notification: false);
             }
             catch
             {
-                return response.ServerError();
+                return _response.ServerError();
             }
         }
 
@@ -98,7 +93,7 @@ namespace POS_OS_GG.Services
                 var existingUser = await _userManager.FindByCompanyId(userRegistration.CompanyId.Value);
                 if (existingUser != null)
                 {
-                    return response.Fail("User already exists", notification: true);
+                    return _response.Fail("User already exists", notification: true);
                 }
 
                 // Create new user
@@ -111,7 +106,7 @@ namespace POS_OS_GG.Services
                 var createResult = await _userManager.CreateAsync(newUser, userRegistration.Password);
                 if (!createResult.Succeeded)
                 {
-                    return response.Fail(createResult.Errors.FirstOrDefault().Description, notification: true);
+                    return _response.Fail(createResult.Errors.FirstOrDefault().Description, notification: true);
                 }
 
                 // Add user to the specified role
@@ -120,18 +115,18 @@ namespace POS_OS_GG.Services
                 {
                     // If adding to role fails, delete the newly created user
                     await _userManager.DeleteAsync(newUser);
-                    return response.Fail("Unable to add user to a role", notification: true);
+                    return _response.Fail("Unable to add user to a role", notification: true);
                 }
 
                 // Update global user list and trigger user change event
                 _globalManager.Users = await UpdateGlobalUserList();
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
-                return response.Success("User creation was successful", notification: true);
+                return _response.Success("User creation was successful", notification: true);
             }
             catch
             {
-                return response.ServerError();
+                return _response.ServerError();
             }
         }
 
@@ -152,7 +147,7 @@ namespace POS_OS_GG.Services
                 // Check if the user exists
                 if (userToUpdate == null)
                 {
-                    return response.Fail("User could not be found", notification: false);
+                    return _response.Fail("User could not be found", notification: false);
                 }
 
                 userToUpdate.UserName = user.Name;
@@ -164,7 +159,7 @@ namespace POS_OS_GG.Services
                     var passwordSetResult = await _userManager.AddPasswordAsync(userToUpdate, user.Password);
                     if (!passwordRemoveResult.Succeeded || !passwordSetResult.Succeeded)
                     {
-                        return response.Fail("Password could not be changed", notification: false);
+                        return _response.Fail("Password could not be changed", notification: false);
                     }
                 }
 
@@ -172,7 +167,7 @@ namespace POS_OS_GG.Services
 
                 if (!result.Succeeded)
                 {
-                    return response.Fail("Unable to update user", notification: true);
+                    return _response.Fail("Unable to update user", notification: true);
                 }
 
                 // Update the user's role
@@ -183,14 +178,14 @@ namespace POS_OS_GG.Services
 
                     if (!updateRoleResult.Succeeded)
                     {
-                        return response.Fail("Unable to update user role", notification: true);
+                        return _response.Fail("Unable to update user role", notification: true);
                     }
 
                     var addToRoleResult = await _userManager.AddToRoleAsync(userToUpdate, user.Role);
 
                     if (!addToRoleResult.Succeeded)
                     {
-                        return response.Fail("Unable to update user role", notification: true);
+                        return _response.Fail("Unable to update user role", notification: true);
                     }
                 }
 
@@ -198,11 +193,11 @@ namespace POS_OS_GG.Services
                 _globalManager.Users = await UpdateGlobalUserList();
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
-                return response.Success("User role has been updated", notification: true);
+                return _response.Success("User role has been updated", notification: true);
             }
             catch
             {
-                return response.ServerError();
+                return _response.ServerError();
             }
         }
 
@@ -213,9 +208,9 @@ namespace POS_OS_GG.Services
         /// <returns></returns>
         private async Task<HashSet<UserInfo>> UpdateGlobalUserList()
         {
-            var users = (await _appDbContext.UserRoles
-                .Join(_appDbContext.ApplicationUsers, x => x.UserId, x => x.Id, (role, user) => new { role, user })
-                .Join(_appDbContext.Roles, x => x.role.RoleId, x => x.Id, (userRole, role) => new { userRole, role })
+            var users = (await _context.UserRoles
+                .Join(_context.ApplicationUsers, x => x.UserId, x => x.Id, (role, user) => new { role, user })
+                .Join(_context.Roles, x => x.role.RoleId, x => x.Id, (userRole, role) => new { userRole, role })
                 .Select(ur =>
                     new UserInfo
                     {

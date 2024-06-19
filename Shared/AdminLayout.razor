@@ -25,10 +25,10 @@
     </MudAppBar>
     <MudDrawer @bind-Open="@_drawerOpen">
         <MudNavMenu>
-            <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
-            <MudNavLink Href="/servers" Match="NavLinkMatch.Prefix">Servers</MudNavLink>
+            <MudNavLink Href="/admin/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
+            @* <MudNavLink Href="/servers" Match="NavLinkMatch.Prefix">Servers</MudNavLink> *@
                 <MudNavLink Href="/admin/user-manager" Match="NavLinkMatch.Prefix">User List</MudNavLink>
-            <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink>
+            @* <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink> *@
         </MudNavMenu>
     </MudDrawer>
     <MudMainContent>

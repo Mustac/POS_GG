@@ -57,6 +57,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredToast();
 
 builder.Services.AddScoped<UserManagerService>();
+builder.Services.AddScoped<ProductService>();
 
 var app = builder.Build();
 

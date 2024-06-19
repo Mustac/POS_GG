@@ -16,6 +16,8 @@ namespace POS_OS_GG.Data
         public DbSet<OrderProduct> OrderProducts { get; set; }
 
         public DbSet<ApplicationUser> ApplicationUsers { get; set; }
+        public DbSet<Category> Categories { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -23,38 +25,48 @@ namespace POS_OS_GG.Data
 
             base.OnModelCreating(builder);
 
-            // Configure the relationships
+            builder.Entity<ApplicationUser>()
+                 .HasIndex(x => x.CompanyId)
+                 .IsUnique();
+
+            // Configure Product relationships
             builder.Entity<Product>()
                 .HasOne(p => p.ApplicationUser)
                 .WithMany(u => u.Products)
                 .HasForeignKey(p => p.UserRegistratedId)
-                .HasPrincipalKey(u => u.Id);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<Product>()
+                .HasOne(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure Order relationships
             builder.Entity<Order>()
                 .HasOne(o => o.UserOrdered)
-                .WithMany(u => u.Orders)
+                .WithMany(u => u.OrdersMade)
                 .HasForeignKey(o => o.UserOrderedId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasPrincipalKey(u => u.Id);
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Order>()
                 .HasOne(o => o.UserDelivered)
-                .WithMany()
+                .WithMany(u => u.OrdersDelivered)
                 .HasForeignKey(o => o.UserDeliveredId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasPrincipalKey(u => u.Id);
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure OrderProduct relationships
             builder.Entity<OrderProduct>()
                 .HasOne(op => op.Order)
                 .WithMany(o => o.OrderProducts)
-                .HasForeignKey(op => op.OrderId)
-                .HasPrincipalKey(o => o.Id);
+                .HasForeignKey(op => op.OrderId);
 
             builder.Entity<OrderProduct>()
                 .HasOne(op => op.Product)
-                .WithMany()
-                .HasForeignKey(op => op.ProductId)
-                .HasPrincipalKey(p => p.Id);
+                .WithMany(o => o.OrderProducts)
+                .HasForeignKey(op => op.ProductId);
+
+
         }
     }
 }

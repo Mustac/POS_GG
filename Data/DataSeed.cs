@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using POS_GG_APP.Models;
+using POS_OS_GG.Data;
+using POS_OS_GG.Models;
 using System;
 using System.Threading.Tasks;
 
@@ -67,6 +69,13 @@ namespace POS_GG_APP.Data
                     {
                         throw new Exception("Could not create admin user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
                     }
+
+                    var database = services.GetRequiredService<ApplicationDbContext>();
+
+                    await database.Categories.AddAsync(new Category { Name = "uncategorized", Icon = "" });
+                    await database.SaveChangesAsync();
+
+
                 }
                 catch (Exception ex)
                 {

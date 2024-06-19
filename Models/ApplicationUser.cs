@@ -7,8 +7,10 @@ namespace POS_GG_APP.Models
     public class ApplicationUser : IdentityUser
     {
         public int CompanyId { get; set; }
-        public List<Product> Products { get; set; }
-        public List<Order> Orders { get; set; }
+        public ICollection<Product> Products { get; set; }
+        public ICollection<Order> OrdersMade { get; set; }
+        public ICollection<Order> OrdersDelivered { get; set; }
+
     }
 
 }

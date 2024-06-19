@@ -12,8 +12,8 @@ using POS_OS_GG.Data;
 namespace POS_OS_GG.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240616082713_productsOrderingSystem")]
-    partial class productsOrderingSystem
+    [Migration("20240619075442_initial")]
+    partial class initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -233,6 +233,27 @@ namespace POS_OS_GG.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("POS_OS_GG.Models.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
             modelBuilder.Entity("POS_OS_GG.Models.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -255,15 +276,9 @@ namespace POS_OS_GG.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("UserDelivered_Id")
-                        .HasColumnType("integer");
-
                     b.Property<string>("UserOrderedId")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("UserOrdered_Id")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -285,13 +300,7 @@ namespace POS_OS_GG.Migrations
                     b.Property<int>("OrderId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Order_Id")
-                        .HasColumnType("integer");
-
                     b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Product_Id")
                         .HasColumnType("integer");
 
                     b.Property<int>("Quantity")
@@ -314,9 +323,8 @@ namespace POS_OS_GG.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApplicationUser_Id")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -327,6 +335,8 @@ namespace POS_OS_GG.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
 
                     b.HasIndex("UserRegistratedId");
 
@@ -400,13 +410,13 @@ namespace POS_OS_GG.Migrations
             modelBuilder.Entity("POS_OS_GG.Models.Order", b =>
                 {
                     b.HasOne("POS_GG_APP.Models.ApplicationUser", "UserDelivered")
-                        .WithMany()
+                        .WithMany("OrdersDelivered")
                         .HasForeignKey("UserDeliveredId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("POS_GG_APP.Models.ApplicationUser", "UserOrdered")
-                        .WithMany("Orders")
+                        .WithMany("OrdersMade")
                         .HasForeignKey("UserOrderedId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -425,7 +435,7 @@ namespace POS_OS_GG.Migrations
                         .IsRequired();
 
                     b.HasOne("POS_OS_GG.Models.Product", "Product")
-                        .WithMany()
+                        .WithMany("OrderProducts")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -437,13 +447,26 @@ namespace POS_OS_GG.Migrations
 
             modelBuilder.Entity("POS_OS_GG.Models.Product", b =>
                 {
+                    b.HasOne("POS_OS_GG.Models.Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("POS_GG_APP.Models.ApplicationUser", "ApplicationUser")
                         .WithMany("Products")
                         .HasForeignKey("UserRegistratedId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ApplicationUser");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("POS_OS_GG.Models.Category", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("POS_OS_GG.Models.Order", b =>
@@ -451,9 +474,16 @@ namespace POS_OS_GG.Migrations
                     b.Navigation("OrderProducts");
                 });
 
+            modelBuilder.Entity("POS_OS_GG.Models.Product", b =>
+                {
+                    b.Navigation("OrderProducts");
+                });
+
             modelBuilder.Entity("POS_GG_APP.Models.ApplicationUser", b =>
                 {
-                    b.Navigation("Orders");
+                    b.Navigation("OrdersDelivered");
+
+                    b.Navigation("OrdersMade");
 
                     b.Navigation("Products");
                 });
