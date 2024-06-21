@@ -34,4 +34,6 @@ namespace POS_OS_GG.Models.ViewModels
         [RequiredIf(nameof(PasswordChange), 4, 10, ErrorMessage = "Password is required when changing password and must be between 4 and 10 characters.")]
         public string? Password { get; set; }
     }
+
 }
+

@@ -1,51 +1,96 @@
-﻿@page "/production/order"
+﻿
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @using POS_OS_GG.Models.ViewModels
+@using System.Security.Claims
 @layout ProductionLayout
 @inject IJSRuntime JSRuntime
 @inject ProductService ProductService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-<div class="autocoplete-filed-position">
-    <MudPaper Class="p-4 pt-1" Outlined="true">
-        <MudAutocomplete T="ProductInfo" id="autocomplete-input" @bind-Value="selectedProduct" Label="Products" SearchFunc="@Search"
+<div style="max-width:650px; width:100%; margin:0 30px;">
+    <div Class='p-3 border rounded @((registrationActive) ? "mb-4 border-warning shadow" : "mb-0 border-0 shadow-none")'>
+            <MudIconButton @onclick="RegisterProductClicked" ButtonType="ButtonType.Button" 
+                Icon="@((registrationActive) ? Icons.Material.Filled.Close : Icons.Material.Filled.KeyboardDoubleArrowDown)" 
+                Style="position:absolute; top:10px; right:50%; transform:translateX(50%)" 
+                Variant="Variant.Filled" Color="@((registrationActive) ? Color.Error : Color.Primary)" 
+             />
+
+
+        @if(registrationActive)
+        {
+            <h6>Register Product</h6>
+            <EditForm Model="_productRegistration" OnValidSubmit="RegisterProductAsync">
+                <DataAnnotationsValidator />
+                <MudTextField Variant="Variant.Filled" Label="Product Name" @bind-Value="_productRegistration.Name" For="@(() => _productRegistration.Name)" />
+                <MudButton ButtonType="ButtonType.Submit" Class="mt-2" FullWidth="true" Color="Color.Primary" Variant="Variant.Filled">Register Product</MudButton>
+            </EditForm>
+        }
+    </div>
+    <div class="search-reg-active">
+        <MudAutocomplete Style="width:100%" T="ProductInfo" id="autocomplete-input" @bind-Value="selectedProduct" Label="Products" SearchFunc="@Search"
+                         
+                         Variant="Variant.Outlined"
                          ResetValueOnEmptyText="false"
                          CoerceText="false" CoerceValue="false"
                          AdornmentIcon="@Icons.Material.Filled.Search" AdornmentColor="Color.Surface"
-                         ToStringFunc="@(product => product.Name)" />
-    </MudPaper>
+                         ToStringFunc="@(product => product?.Name)" /> 
+    </div>
 </div>
 
+
+
 @code {
-    private ProductInfo selectedProduct;
+    ProductRegistration _productRegistration = new ProductRegistration();
+
+    string searchValue = string.Empty;
+    string userId = string.Empty;
+
+    bool registrationActive = false;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        if(authState.User is null || !authState.User.Identity.IsAuthenticated)
+            return;
+    userId = authState.User.Claims.FirstOrDefault().Value;
+    }
+
+    private ProductInfo selectedProduct = new ProductInfo();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("focusElementOnKeyPress");
+            // await JSRuntime.InvokeVoidAsync("focusElementOnKeyPress");
         }
     }
 
     private async Task<IEnumerable<ProductInfo>> Search(string value)
     {
-        value = value.ToLower();
+        value = value.ToUpper();
+
+        searchValue = value;
 
         var result = await ProductService.GetProductsAsync(value);
 
-        if(!result.Data.Any<ProductInfo>(x=>x.Name.ToLower() == value))
-        {
-            var registerProductResult = await ProductService.RegisterProductAsync(value);
-
-            if (registerProductResult.IsSuccess)
-            {
-                    // add to order this product
-            }
-        }
-
-        if(!result.IsSuccess)
+        if (!result.IsSuccess)
         {
             return new HashSet<ProductInfo>();
         }
 
         return result.Data;
+    }
+
+    void RegisterProductClicked()
+    {
+        registrationActive = !registrationActive;
+        if (!registrationActive)
+            _productRegistration = new ProductRegistration();
+
+    }
+
+    private async Task RegisterProductAsync()
+    {
+        var registerProductResult = await ProductService.RegisterProductAsync(_productRegistration.Name, userId);
     }
 }

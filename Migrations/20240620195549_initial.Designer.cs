@@ -12,7 +12,7 @@ using POS_OS_GG.Data;
 namespace POS_OS_GG.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240619075442_initial")]
+    [Migration("20240620195549_initial")]
     partial class initial
     {
         /// <inheritdoc />
@@ -337,6 +337,9 @@ namespace POS_OS_GG.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.HasIndex("UserRegistratedId");
 

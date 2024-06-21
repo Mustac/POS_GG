@@ -335,6 +335,9 @@ namespace POS_OS_GG.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.HasIndex("UserRegistratedId");
 
                     b.ToTable("Products");

@@ -7,6 +7,10 @@
     transform:translateX(-50%);
 }
 
+.search-reg-active {
+    /* margin-top:180px;*/
+}
+
 @media (max-width: 768px) {
     .autocoplete-filed-position{
         top:50px ;

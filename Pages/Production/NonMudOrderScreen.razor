@@ -1,0 +1,29 @@
+﻿@page "/production/order"
+@using POS_OS_GG.Helpers
+@layout ProductionLayout
+@inject ProductService ProductService
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-6">
+            <EditForm Model="_searchEntity" OnValidSubmit="HandleValidSubmitAsync">
+                <MudTextField Label="Search" Variant="Variant.Outlined" OnAdornmentClick="OnSearchClicked" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.Search" @bind-Value="_searchEntity.Text" />
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    SearchEntity _searchEntity = new SearchEntity();
+
+    async Task HandleValidSubmitAsync()
+    {
+        
+    }
+
+    async Task OnSearchClicked(MouseEventArgs me)
+    {
+        
+    }
+
+}

@@ -75,6 +75,8 @@ else
 
 await DataSeed.Seed(app);
 
+app.Services.GetService<GlobalManager>().SeedData(app);
+
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();

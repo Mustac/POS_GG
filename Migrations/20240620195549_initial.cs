@@ -325,6 +325,12 @@ namespace POS_OS_GG.Migrations
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Products_Name",
+                table: "Products",
+                column: "Name",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Products_UserRegistratedId",
                 table: "Products",
                 column: "UserRegistratedId");

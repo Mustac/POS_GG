@@ -22,6 +22,8 @@ namespace POS_OS_GG.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<ApplicationUser>().HasIndex(x => x.CompanyId).IsUnique();
+            builder.Entity<Product>().HasIndex(x => x.Name).IsUnique();
+
 
             base.OnModelCreating(builder);
 

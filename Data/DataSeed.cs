@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using POS_GG_APP.Models;
 using POS_OS_GG.Data;
 using POS_OS_GG.Models;
+using POS_OS_GG.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -51,29 +53,40 @@ namespace POS_GG_APP.Data
 
                     var adminUser = await userManager.Users.SingleOrDefaultAsync(u => u.CompanyId == adminIdint);
 
-                    if (adminUser != null)
-                        return;
-
-                    var user = new ApplicationUser
+                    if (adminUser == null)
                     {
-                        CompanyId = adminIdint,
-                        UserName = adminName,
-                    };
+                        var user = new ApplicationUser
+                        {
+                            CompanyId = adminIdint,
+                            UserName = adminName,
+                        };
 
-                    var result = await userManager.CreateAsync(user, adminPassword);
-                    if (result.Succeeded)
-                    {
-                        await userManager.AddToRoleAsync(user, Roles.Administrator);
+                        var result = await userManager.CreateAsync(user, adminPassword);
+
+                        if (result.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(user, Roles.Administrator);
+                        }
+                        else
+                        {
+                            throw new Exception("Could not create admin user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+                        }
+
+
                     }
-                    else
-                    {
-                        throw new Exception("Could not create admin user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
-                    }
-
+                    
                     var database = services.GetRequiredService<ApplicationDbContext>();
 
-                    await database.Categories.AddAsync(new Category { Name = "uncategorized", Icon = "" });
-                    await database.SaveChangesAsync();
+                   if(!await database.Categories.AnyAsync(c => c.Name == "uncategorized"))
+                    {
+                        await database.Categories.AddAsync(new Category { Name = "uncategorized", Icon = "" });
+
+                        await database.SaveChangesAsync();
+
+                    }
+
+
+
 
 
                 }
@@ -84,6 +97,8 @@ namespace POS_GG_APP.Data
                 }
             }
         }
+
+      
 
     }
 }
