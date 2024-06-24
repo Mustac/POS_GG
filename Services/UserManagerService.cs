@@ -13,8 +13,8 @@ namespace POS_OS_GG.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar) 
-            : base(appDbContext, globalManager, snackbar)
+        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar, ILogger<UserManagerService> logger) 
+            : base(appDbContext, globalManager, snackbar, logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;

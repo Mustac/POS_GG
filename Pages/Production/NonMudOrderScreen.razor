@@ -2,6 +2,7 @@
 @using POS_OS_GG.Helpers
 @layout ProductionLayout
 @inject ProductService ProductService
+@inject ILogger<ProductInfo> Logger
 
 <div class="container-fluid">
     <div class="row justify-content-center">
@@ -9,21 +10,43 @@
             <EditForm Model="_searchEntity" OnValidSubmit="HandleValidSubmitAsync">
                 <MudTextField Label="Search" Variant="Variant.Outlined" OnAdornmentClick="OnSearchClicked" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Outlined.Search" @bind-Value="_searchEntity.Text" />
             </EditForm>
+            <ul>
+                @foreach (var product in _searchResults)
+                {
+                    <li>@product.Name (@product.CategoryName)</li>
+                }
+            </ul>
         </div>
     </div>
 </div>
 
 @code {
     SearchEntity _searchEntity = new SearchEntity();
+    HashSet<ProductInfo> _searchResults = new HashSet<ProductInfo>();
 
     async Task HandleValidSubmitAsync()
     {
-        
+        await PerformSearchAsync();
     }
 
     async Task OnSearchClicked(MouseEventArgs me)
     {
-        
+        await PerformSearchAsync();
     }
 
+    async Task PerformSearchAsync()
+    {
+        Logger.LogInformation($"Search text: {_searchEntity.Text}");
+        var response = await ProductService.GetProductsAsync(_searchEntity.Text);
+        if (response.IsSuccess)
+        {
+            _searchResults = response.Data;
+            Logger.LogInformation($"Search results: {string.Join(", ", _searchResults.Select(p => p.Name))}");
+        }
+        else
+        {
+            _searchResults = new HashSet<ProductInfo>();
+            Logger.LogInformation("No results found.");
+        }
+    }
 }

@@ -9,9 +9,11 @@ namespace POS_OS_GG.Services;
 
 public class ProductService : BaseService
 {
+    private readonly LuceneService _luceneService;
 
-    public ProductService(ApplicationDbContext applicationDbContext, GlobalManager globalManager, ISnackbar snackbar) : base(applicationDbContext, globalManager, snackbar)
+    public ProductService(ApplicationDbContext applicationDbContext, GlobalManager globalManager, ISnackbar snackbar, LuceneService luceneService, ILogger<ProductService> logger) : base(applicationDbContext, globalManager, snackbar, logger)
     {
+        _luceneService = luceneService;
     }
 
 
@@ -19,24 +21,24 @@ public class ProductService : BaseService
     {
         try
         {
-
             if (string.IsNullOrWhiteSpace(searchText))
             {
-                return _response.Success(_globalManager.Products, notification:false);
+                return _response.Success(_globalManager.Products, notification: false);
             }
 
-            var searchLower = searchText.ToUpper();
+            var searchResults = _luceneService.Search(searchText.ToUpper());
+            _logger.LogInformation($"Search results: {string.Join(", ", searchResults)}");
 
             var filteredProducts = _globalManager.Products
-                .Where(x => x.Name.Contains(searchLower) ||
-                            x.CategoryName.Contains(searchLower))
-                .OrderByDescending(x=>x.Name)
+                .Where(x => searchResults.Contains(x.Name.ToUpper()))
+                .OrderByDescending(x => x.Name)
                 .ToHashSet();
 
-            return _response.Success(filteredProducts, notification:false);
+            return _response.Success(filteredProducts, notification: false);
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error occurred while searching for products.");
             return _response.ServerError<HashSet<ProductInfo>>(message: ex.Message);
         }
     }

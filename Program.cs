@@ -6,6 +6,7 @@ global using Microsoft.AspNetCore.Components.Authorization;
 global using Blazored.LocalStorage;
 global using Blazored.Toast;
 global using Blazored.Toast.Services;
+global using POS_OS_GG.Models.ViewModels;
 
 
 using Microsoft.AspNetCore.Components.Web;
@@ -51,10 +52,12 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<ApplicationUser>>();
 
-builder.Services.AddSingleton<GlobalManager>();
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredToast();
+
+builder.Services.AddSingleton<GlobalManager>();
+builder.Services.AddSingleton<LuceneService>();
 
 builder.Services.AddScoped<UserManagerService>();
 builder.Services.AddScoped<ProductService>();
