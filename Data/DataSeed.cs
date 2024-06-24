@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using POS_GG_APP.Models;
 using POS_OS_GG.Data;
 using POS_OS_GG.Models;
+using POS_OS_GG.Models.ViewModels;
+using POS_OS_GG.Services;
 using System;
 using System.Threading.Tasks;
 
@@ -51,29 +53,42 @@ namespace POS_GG_APP.Data
 
                     var adminUser = await userManager.Users.SingleOrDefaultAsync(u => u.CompanyId == adminIdint);
 
-                    if (adminUser != null)
-                        return;
+                    if (adminUser == null)
+                    {
+                        var user = new ApplicationUser
+                        {
+                            CompanyId = adminIdint,
+                            UserName = adminName,
+                        };
 
-                    var user = new ApplicationUser
-                    {
-                        CompanyId = adminIdint,
-                        UserName = adminName,
-                    };
+                        var result = await userManager.CreateAsync(user, adminPassword);
 
-                    var result = await userManager.CreateAsync(user, adminPassword);
-                    if (result.Succeeded)
-                    {
-                        await userManager.AddToRoleAsync(user, Roles.Administrator);
-                    }
-                    else
-                    {
-                        throw new Exception("Could not create admin user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+                        if (result.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(user, Roles.Administrator);
+                        }
+                        else
+                        {
+                            throw new Exception("Could not create admin user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+                        }
+
                     }
 
                     var database = services.GetRequiredService<ApplicationDbContext>();
 
-                    await database.Categories.AddAsync(new Category { Name = "uncategorized", Icon = "" });
-                    await database.SaveChangesAsync();
+                    if (!await database.Categories.AnyAsync(c => c.Name == "uncategorized"))
+                    {
+                        await database.Categories.AddAsync(new Category { Name = "uncategorized", Icon = "" });
+
+                        await database.SaveChangesAsync();
+                    }
+
+                    var globalManager = services.GetRequiredService<GlobalManager>();
+
+                    globalManager.Products = (await database.Products.Include(x => x.Category)
+                    .Select(x => new ProductInfo { Id = x.Id, Name = x.Name, CategoryId = x.CategoryId, CategoryName = x.Category.Name, CategoryIcon = x.Category.Icon })
+                    .ToListAsync()).ToHashSet(); ;
+
 
 
                 }

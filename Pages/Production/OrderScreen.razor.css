@@ -7,6 +7,19 @@
     transform:translateX(-50%);
 }
 
+.product-list{
+    max-height: 300px;
+    width: 100%;
+}
+
+    .product-list li {
+        margin:20px;
+        padding:20px;
+        border-radius:10px;
+        border: 1px solid #ced4da;
+        background-color:rgb(255, 255, 255, 0.15);
+    }
+
 @media (max-width: 768px) {
     .autocoplete-filed-position{
         top:50px ;
