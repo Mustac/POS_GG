@@ -1,0 +1,28 @@
+﻿.input-dropdown {
+    position: absolute;
+    top: 44px;
+    width: 100%;
+    border-radius: 7px;
+    border: 2px solid #ced4da;
+    border-radius: 0.25rem !important;
+    color: #ced4da;
+    font-size: 1rem;
+    cursor:pointer;
+    line-height: 1.5;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    transition: all 0.1s;
+}
+
+ul li {
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 0.5rem;
+}
+
+ul li:hover {
+        background-color: rgba(0, 0, 0, 0.35);
+    }
+
+    ul li:focus {
+        background-color: rgba(0, 0, 0, 0.35);
+    }
+

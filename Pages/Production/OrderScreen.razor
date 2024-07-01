@@ -1,6 +1,6 @@
-﻿@page "/production/order"
-
+﻿@page "/production/test"
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
+@using POS_OS_GG.Helpers
 @using POS_OS_GG.Models.ViewModels
 @using System.Security.Claims
 @layout ProductionLayout
@@ -8,13 +8,29 @@
 @inject ProductService ProductService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject GlobalManager GlobalManager
+@inject OrderService OrderService
+
+<MudDrawer @bind-Open="@shoppingBagActive" Class="shopping-drawer" Anchor="Anchor.Right" Elevation="1" Variant="@DrawerVariant.Persistent">
+    <MudDrawerHeader Class="d-flex justify-content-between">
+        <MudText Typo="Typo.h6" Class="mt-2">Orders</MudText>
+        <MudIconButton OnClick="@(()=>shoppingBagActive = false)" Class="mb-2" Icon="@Icons.Material.Filled.Close"></MudIconButton>
+    </MudDrawerHeader>
+
+</MudDrawer>
 
 <div style="max-width:650px; width:100%; margin-top:50px" class="mx-auto px-4">
     <div Class='p-3 border rounded @((registrationActive) ? "mb-4 border-warning shadow" : "mb-0 border-0 shadow-none")'>
-        <MudIconButton @onclick="RegisterProductClicked" ButtonType="ButtonType.Button"
-                       Icon="@((registrationActive) ? Icons.Material.Filled.Close : Icons.Material.Filled.KeyboardDoubleArrowDown)"
-                       Style="position:absolute; top:10px; right:50%; transform:translateX(50%)"
-                       Variant="Variant.Filled" Color="@((registrationActive) ? Color.Error : Color.Primary)" />
+        <div style="max-width:650px; background-color:red; position:relative;">
+            <MudIconButton @onclick="RegisterProductClicked" ButtonType="ButtonType.Button"
+                           Icon="@((registrationActive) ? Icons.Material.Filled.Close : Icons.Material.Filled.KeyboardDoubleArrowDown)"
+                           Style="position:absolute; top:-60px; right:50%; transform:translateX(50%)"
+                           Variant="Variant.Filled" Color="@((registrationActive) ? Color.Error : Color.Primary)" />
+
+            <MudIconButton @onclick="@(()=>shoppingBagActive = !shoppingBagActive)" ButtonType="ButtonType.Button"
+                           Icon="@((shoppingBagActive) ? Icons.Material.Outlined.ShoppingBag : Icons.Material.Filled.ShoppingBag)"
+                           Style="position:absolute; top:-65px; right:0; "
+                           Color="Color.Success" />
+        </div>
 
 
         @if (registrationActive)
@@ -27,83 +43,125 @@
         }
     </div>
     <div class="search-reg-active">
-        <MudAutocomplete Style="width:100%" T="ProductInfo" id="autocomplete-input" @bind-Value="SelectedProduct" Label="Products" SearchFunc="@Search"
+        <MudAutocomplete @ref="autocomplete" Style="width:100%" T="ProductInfo" id="autocomplete-input" @bind-Value="SelectedProduct" Label="Products" SearchFunc="@Search"
                          Variant="Variant.Outlined"
                          ResetValueOnEmptyText="false"
-                         CoerceText="false" 
+                         CoerceText="false"
                          CoerceValue="false"
-                         AdornmentIcon="@Icons.Material.Filled.Search" 
+                         AdornmentIcon="@Icons.Material.Filled.Search"
                          AdornmentColor="Color.Surface"
                          ToStringFunc="@(product => product?.Name)"
-                         ShowProgressIndicator="true" 
-                         SelectOnClick="true"
-                         />
+                         ShowProgressIndicator="true"
+                         SelectOnClick="true" />
     </div>
-    @if(orderProducts.Count > 0)
+
+
+
+    @if (zeroOrderError)
     {
-        @foreach(var product in orderProducts)
+        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-3" ContentAlignment="HorizontalAlignment.Center">Product Quantity can't be 0</MudAlert>
+    }
+    @if (orderProducts.Count > 0)
+    {
+        @foreach (var product in orderProducts)
         {
             @if (!string.IsNullOrEmpty(product.Name))
             {
-                <div class="bg-light text-dark p-3 my-4 rounded">
+
+
+                <div class="bg-light text-dark p-3 my-4 rounded position-relative">
+                    <div @onclick="@(()=>RemoveFromCart(product))" style="position:absolute; left:-25px; top:20%; transform:translateY(-50%); cursor:pointer; width:30px; height:30px;" class="bg-danger rounded border border-dark d-flex justify-content-center align-items-center">
+                        <i class="fa-solid fa-trash-can text-white"></i>
+                    </div>
+
                     <div class="d-flex justify-content-between align-content-center ">
                         <div class="border border-0 border-bottom d-flex justify-content-between fw-bolder mb-2 border-dark" style="width:100%">
                             <div>
                                 @product.Name
                             </div>
-                            <div>
-                                10 pcs
+                            <div class="@(product.Quantity == 0?"text-danger":"text-dark")">
+                                @product.Quantity @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")
                             </div>
                         </div>
                     </div>
                     <div class="d-flex justify-content-between">
                         <div>
                             <div>
-                                <b>Unit :</b>
+                                <b>Unit : @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")</b>
                             </div>
                             <div class="mt-2">
-                                <button class="btn btn-primary btn-sm">Kg/l</button>
-                                <button class="btn btn-sm  btn-outline-primary ">PC</button>
+                                <button class="btn btn-sm  @(product.Measurement == (int)Measurement.Pcs?"btn-primary":"btn-outline-primary")" @onclick="@(()=>ChangeMeasurement(product, Measurement.Pcs))">Pcs</button>
+                                <button class="btn btn-sm @(product.Measurement == (int)Measurement.Kg?"btn-primary":"btn-outline-primary")  " @onclick="@(()=>ChangeMeasurement(product, Measurement.Kg))">Kg</button>
                             </div>
                         </div>
                         <div>
-                            <div class="mb-2">
-                                <div class="btn btn-success btn-sm mx-1" style="width:80px;">
-                                    <i class="fa-solid fa-plus"></i> 1
+                            @if (product.Measurement == (int)Measurement.Kg)
+                            {
+
+                                <div class="mb-2">
+                                    <div class="btn btn-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -0.1f))">
+                                        <i class="fa-solid fa-minus"></i> 0.1
+                                    </div>
+                                    <div class="btn btn-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 0.1f))">
+                                        <i class="fa-solid fa-plus"></i> 0.1
+                                    </div>
                                 </div>
-                                <div class="btn btn-danger btn-sm mx-1" style="width:80px;">
-                                    <i class="fa-solid fa-minus"></i> 1
+                                <div>
+                                    <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -1))">
+                                        <i class="fa-solid fa-minus"></i> 1
+                                    </div>
+                                    <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 1))">
+                                        <i class="fa-solid fa-plus"></i> 1
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;">
-                                    <i class="fa-solid fa-plus"></i> 10
+                            }
+                            else
+                            {
+                                <div class="mb-2">
+                                    <div class="btn btn-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -1))">
+                                        <i class="fa-solid fa-minus"></i> 1
+                                    </div>
+                                    <div class="btn btn-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 1))">
+                                        <i class="fa-solid fa-plus"></i> 1
+                                    </div>
                                 </div>
-                                <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;">
-                                    <i class="fa-solid fa-minus"></i> 10
+                                <div>
+                                    <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -10))">
+                                        <i class="fa-solid fa-minus"></i> 10
+                                    </div>
+                                    <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 10))">
+                                        <i class="fa-solid fa-plus"></i> 10
+                                    </div>
                                 </div>
-                            </div>
+                            }
                         </div>
                     </div>
                 </div>
             }
         }
 
-    <div class="d-flex justify-content-end">
-        <MudButton Variant="Variant.Filled" Class="mt-3" Color="Color.Success" EndIcon="@Icons.Material.Filled.ArrowRight">Order Now</MudButton>
-    </div>
+        <div class="d-flex justify-content-end">
+            <MudButton OnClick="HandleOrder" Variant="Variant.Filled" Class="mt-3" Color="Color.Success" EndIcon="@Icons.Material.Filled.ArrowRight">Order Now</MudButton>
+        </div>
     }
 
 </div>
 
 
 
+
 @code {
+
+    MudAutocomplete<ProductInfo> autocomplete;
+
     ProductRegistration _productRegistration = new ProductRegistration();
 
     List<ProductInfo> orderProducts = new List<ProductInfo>();
 
     private ProductInfo selectedProduct = new ProductInfo();
+
+    bool zeroOrderError = false;
+    bool shoppingBagActive = false;
 
     private ProductInfo SelectedProduct
     {
@@ -113,7 +171,7 @@
             selectedProduct = value;
             AddProductToOrder();
         }
-    } 
+    }
 
     string searchValue = string.Empty;
     string userId = string.Empty;
@@ -145,26 +203,47 @@
 
         var result = await ProductService.GetProductsAsync(value);
 
+        List<ProductInfo> searchedProducts = new List<ProductInfo>();
 
         if (!result.IsSuccess)
         {
             return new HashSet<ProductInfo>();
         }
 
-        foreach(var orderProduct in orderProducts)
+        foreach (var product in result.Data)
         {
-            foreach(var product in result.Data)
+            bool hasMember = false;
+            foreach (var orderProduct in orderProducts)
             {
-                if(orderProduct.Name == product.Name)
+                if (product.Id == orderProduct.Id)
                 {
-                    result.Data.Remove(product);
+                    hasMember = true;
+                    break;
                 }
+
+
+            }
+
+            if (!hasMember)
+            {
+                searchedProducts.Add(
+                       new ProductInfo
+                           {
+                               Id = product.Id,
+                               Name = product.Name,
+                               Measurement = product.Measurement
+                           });
             }
 
 
         }
 
-        return result.Data;
+        return searchedProducts;
+    }
+
+    private void RemoveFromCart(ProductInfo product)
+    {
+        orderProducts.Remove(product);
     }
 
     void RegisterProductClicked()
@@ -188,9 +267,59 @@
 
     void AddProductToOrder()
     {
+        if(selectedProduct.Id == 0)
+            return;
+
         orderProducts.Add(selectedProduct);
-        selectedProduct = new ProductInfo();
+        SelectedProduct = new ProductInfo();
         StateHasChanged();
+    }
+
+    void ChangeMeasurement(ProductInfo product, Measurement measurement)
+    {
+        product.Measurement = (int)measurement;
+        product.Quantity = 0;
+    }
+
+    void ChangeQuantity(ProductInfo product, float quantity)
+    {
+
+        if(product.Quantity + quantity < 0)
+        {
+            product.Quantity = 0;
+            return;
+        };
+
+        product.Quantity += quantity;
+        // round product.Quantity to 2 decimal places
+        product.Quantity = (float)Math.Round(product.Quantity, 2);
+
+        if (zeroOrderError)
+        {
+            if (orderProducts.All(x => x.Quantity > 0))
+            {
+                zeroOrderError = false;
+                return;
+            }
+        }
+
+    }
+
+    async Task HandleOrder()
+    {
+        // check if orderProducts have any quantity number 0
+        if(orderProducts.Any(x=>x.Quantity == 0))
+        {
+            zeroOrderError = true;
+            return;
+        }
+
+        var orderResult = await OrderService.OrderProductsAsync(orderProducts, userId);
+
+        if (orderResult.IsSuccess)
+        {
+
+        }
     }
 
 }

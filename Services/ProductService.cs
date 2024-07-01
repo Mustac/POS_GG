@@ -55,7 +55,7 @@ public class ProductService : BaseService
             {
                 Name = productName,
                 CategoryId = 1,
-                UserRegistratedId = userId
+                UserRegistratedId = userId,
             };
 
             await _context.Products.AddAsync(productInfo);

@@ -12,6 +12,11 @@ a, .btn-link {
     color: #0071c1;
 }
 
+#autocomplete-input:focus {
+    box-shadow: none;
+    border-color: transparent;
+}
+
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
@@ -24,6 +29,10 @@ a, .btn-link {
 
 .content {
     padding-top: 1.1rem;
+}
+
+.cursor-pointer{
+    cursor: pointer;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -91,4 +100,16 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type=number] {
     -moz-appearance: textfield !important;
+}
+
+
+
+@media (max-width: 768px) {
+    .shopping-drawer {
+        width: 100% !important;
+    }
+
+    .mud-drawer.mud-drawer-responsive.mud-drawer-pos-right.mud-drawer--closed, .mud-drawer.mud-drawer-persistent.mud-drawer-pos-right.mud-drawer--closed {
+        right: -100% !important;
+    }
 }

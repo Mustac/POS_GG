@@ -6,7 +6,9 @@ namespace POS_OS_GG.Models
     public class OrderProduct
     {
         public int Id { get; set; }
-        public int Quantity { get; set; }
+        public float Quantity { get; set; }
+
+        public int Measurement { get; set; }
 
 
         [ForeignKey("Order")]

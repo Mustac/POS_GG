@@ -1,0 +1,75 @@
+﻿@layout ProductionLayout
+@page "/production/order"
+@inject IJSRuntime JsRuntime
+@using System.Timers;
+@using POS_OS_GG.Models.ViewModels
+
+<div style="max-width:650px; width:100%; margin-top:50px" class="mx-auto px-4">
+    <div>
+        <div class="input-group mb-3">
+            <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light" @bind="text" @oninput="InputChanged">
+            <span class="input-group-text cursor-pointer">Search</span>
+            <div @ref="inputDropdown" class="input-dropdown">
+                <ul>
+                    <li tabindex="0">Hello</li>
+                    <li tabindex="0">Hello</li>
+                    <li tabindex="0">Hello</li>
+                    <li tabindex="0">Hello</li>
+                    <li tabindex="0">Hello</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div>@text</div>
+
+    @if(foundProducts is not null)
+    {
+        
+    }
+
+</div>
+
+@code {
+    string text = "";
+    Timer eraseTextTimer;
+    Timer autocompleteTimer;
+
+    HashSet<ProductInfo> foundProducts;
+
+    ElementReference input;
+    ElementReference inputDropdown;
+
+    protected override void OnInitialized()
+    {
+        eraseTextTimer = new Timer(60000);
+        autocompleteTimer = new Timer(1500);
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if(firstRender)
+            await JsRuntime.InvokeVoidAsync("focusElementOnKeyPress", input, inputDropdown);
+
+        eraseTextTimer.Elapsed += EraseText;
+        eraseTextTimer.Enabled = true;
+    }
+
+    void InputChanged(ChangeEventArgs e)
+    {
+        text = e.Value.ToString();
+        eraseTextTimer.Stop();
+        eraseTextTimer.Start();
+    }
+
+    void EraseText(object o, ElapsedEventArgs e)
+    {
+        text = "";
+        JsRuntime.InvokeVoidAsync("clearSearchInput", input);
+        eraseTextTimer.Stop();
+    }
+
+    async Task RegisterProductAsync()
+    {
+        
+    }
+}

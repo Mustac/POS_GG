@@ -8,10 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Pages\Production\OrderPage.razor.css" />
     <None Remove="Pages\Production\OrderScreen.razor.css" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Pages\Production\OrderPage.razor.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
     <Content Include="Pages\Production\OrderScreen.razor.css" />
   </ItemGroup>
 

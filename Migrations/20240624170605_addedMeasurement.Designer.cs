@@ -12,8 +12,8 @@ using POS_OS_GG.Data;
 namespace POS_OS_GG.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240619075442_initial")]
-    partial class initial
+    [Migration("20240624170605_addedMeasurement")]
+    partial class addedMeasurement
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -324,6 +324,9 @@ namespace POS_OS_GG.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Measurement")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")

@@ -58,6 +58,7 @@ builder.Services.AddBlazoredToast();
 
 builder.Services.AddScoped<UserManagerService>();
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<OrderService>();
 
 var app = builder.Build();
 
