@@ -6,6 +6,7 @@ global using Microsoft.AspNetCore.Components.Authorization;
 global using Blazored.LocalStorage;
 global using Blazored.Toast;
 global using Blazored.Toast.Services;
+global using POS_OS_GG.Models.ViewModels;
 
 
 using Microsoft.AspNetCore.Components.Web;

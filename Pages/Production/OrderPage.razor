@@ -1,75 +1,228 @@
-﻿@layout ProductionLayout
-@page "/production/order"
+﻿@page "/production/order"
+@layout ProductionLayout
+@inject ProductService ProductService
 @inject IJSRuntime JsRuntime
 @using System.Timers;
-@using POS_OS_GG.Models.ViewModels
 
-<div style="max-width:650px; width:100%; margin-top:50px" class="mx-auto px-4">
-    <div>
-        <div class="input-group mb-3">
-            <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light" @bind="text" @oninput="InputChanged">
-            <span class="input-group-text cursor-pointer">Search</span>
-            <div @ref="inputDropdown" class="input-dropdown">
-                <ul>
-                    <li tabindex="0">Hello</li>
-                    <li tabindex="0">Hello</li>
-                    <li tabindex="0">Hello</li>
-                    <li tabindex="0">Hello</li>
-                    <li tabindex="0">Hello</li>
-                </ul>
+<div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto px-4">
+    <div class="container-fluid">
+        <div @ref="inputDropdown" class="row">
+            <div class="@(addButtonShow?"col-10":"col-12") position-relative m-0 p-0">
+                <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded" @bind="text" @oninput="InputChanged">
+                
+                @if (loader == Loader.Spinner)
+                {
+                    <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                    </div>
+                }
+
+                @if (loader == Loader.ExclamationMark)
+                {
+                    <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
+                        <i class="fa-solid text-warning fa-triangle-exclamation"></i>
+                    </div>
+                }
+
+                <div @ref="inputDropdown" class='input-dropdown @(showDropdown?"d-block":"d-none")'>
+                    <ul>
+                        @foreach (var product in foundProducts)
+                        {
+                            <li tabindex="0">@product.Name</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            <div class="@(addButtonShow?"d-block":"d-none") col-2">
+                <button title="Add to database" @onclick="AddProduct" style="margin:0 !important;" class='input-group-text cursor-pointer btn btn-success ml-4 rounded control-form @(addButtonShow?"":"d-none")'>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database"></i></button>
             </div>
         </div>
     </div>
-    <div>@text</div>
+    
 
-    @if(foundProducts is not null)
-    {
-        
-    }
+
 
 </div>
 
 @code {
     string text = "";
-    Timer eraseTextTimer;
-    Timer autocompleteTimer;
+    bool addButtonShow = false;
+    bool showDropdown = false;
+    bool showLoader = false;
+    Loader loader = Loader.None;
 
-    HashSet<ProductInfo> foundProducts;
+    // timers ////////////////////////
+    int timerToPerformSearch = 750; //
+    int timerToAddProduct = 3000;   //
+    int timerToInputReset = 60000;  //
+    //////////////////////////////////
+
+    HashSet<POS_OS_GG.Models.ViewModels.ProductInfo> foundProducts = new();
+
+    int timerSecs = 5;
 
     ElementReference input;
     ElementReference inputDropdown;
 
-    protected override void OnInitialized()
-    {
-        eraseTextTimer = new Timer(60000);
-        autocompleteTimer = new Timer(1500);
-    }
+    CancellationTokenSource searchCancellationTokenSource;
+    CancellationTokenSource eraseTextCancellationTokenSource;
 
-    protected async override Task OnAfterRenderAsync(bool firstRender)
+    Timer timer;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if(firstRender)
+        if (firstRender)
+        {
             await JsRuntime.InvokeVoidAsync("focusElementOnKeyPress", input, inputDropdown);
 
-        eraseTextTimer.Elapsed += EraseText;
-        eraseTextTimer.Enabled = true;
+            timer = new Timer(1000);
+            timer.Enabled = true;
+            timer.Elapsed += OnTimedEvent;
+            timer.Stop();
+            addButtonShow = false;
+        }
     }
 
     void InputChanged(ChangeEventArgs e)
     {
         text = e.Value.ToString();
-        eraseTextTimer.Stop();
-        eraseTextTimer.Start();
+        HideAddButton();
+        RestartEraseTextTimer();
+        RestartSearchTimer();
     }
 
-    void EraseText(object o, ElapsedEventArgs e)
+    async void RestartEraseTextTimer()
     {
-        text = "";
-        JsRuntime.InvokeVoidAsync("clearSearchInput", input);
-        eraseTextTimer.Stop();
+        eraseTextCancellationTokenSource?.Cancel();
+        eraseTextCancellationTokenSource = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(timerToInputReset, eraseTextCancellationTokenSource.Token);
+            text = "";
+            await JsRuntime.InvokeVoidAsync("clearSearchInput", input);
+            showDropdown = false;
+            addButtonShow = false;
+            loader = Loader.None;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore the cancellation
+        }
     }
 
-    async Task RegisterProductAsync()
+    async void RestartSearchTimer()
     {
-        
+        searchCancellationTokenSource?.Cancel();
+        loader = Loader.Spinner;
+
+
+        if (text == "")
+        {
+            showDropdown = false;
+            loader = Loader.None;
+            return;
+        }
+
+        searchCancellationTokenSource = new CancellationTokenSource();
+
+        try
+        {
+            await Task.Delay(timerToPerformSearch, searchCancellationTokenSource.Token);
+            await PerformSearch();
+
+        }
+        catch (TaskCanceledException)
+        {
+            // Ignore the cancellation
+        }
     }
+
+    async Task PerformSearch()
+    {
+
+        var response = await ProductService.GetProductsAsync(text);
+
+        if (response.IsSuccess)
+        {
+            foundProducts = response.Data;
+        }
+
+        showDropdown = foundProducts is not null && foundProducts.Count > 0;
+
+        if (foundProducts.Count == 0)
+        {
+            ShowAddButton();
+            StateHasChanged();
+            loader = Loader.ExclamationMark;
+            return;
+        }
+        else
+        {
+            bool productFound = false;
+            foreach (var foundProduct in foundProducts)
+            {
+                if (text.ToLower() == foundProduct.Name.ToLower())
+                {
+                    productFound = true;
+                    break;
+                }
+            }
+
+            if (!productFound)
+            {
+                loader = Loader.ExclamationMark;
+                ShowAddButton();
+            }
+            else
+            {
+                loader = Loader.None;
+                HideAddButton();
+            }
+        }
+
+        StateHasChanged();
+
+    }
+
+    async Task AddProduct()
+    {
+
+    }
+
+    void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
+    {
+        timerSecs -= 1;
+
+        if (timerSecs <= 0)
+        {
+            timerSecs = 0;
+            addButtonShow = true;
+            timer.Stop();
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    void ShowAddButton()
+    {
+        timerSecs = timerToAddProduct/1000;
+        timer.Stop();
+        timer.Start();
+    }
+
+    void HideAddButton()
+    {
+        timer.Stop();
+        addButtonShow = false;
+    }
+
+    public enum Loader
+    {
+        None,
+        Spinner,
+        ExclamationMark,
+    }
+
 }
