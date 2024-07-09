@@ -1,61 +1,71 @@
 ﻿@page "/production/order"
 @layout ProductionLayout
 @inject ProductService ProductService
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
 @using System.Timers;
 
-<div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto px-4">
-    <div class="container-fluid">
-        <div @ref="inputDropdown" class="row">
-            <div class="@(addButtonShow?"col-10":"col-12") position-relative m-0 p-0">
-                <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded" @bind="text" @oninput="InputChanged">
+
+    <div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto px-4">
+        <div class="container-fluid">
+            <div @ref="inputDropdown" class="row">
+                <div class="@(addButtonShow?"col-10":"col-12") position-relative m-0 p-0">
+                    <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded" @bind="text" @oninput="InputChanged">
                 
-                @if (loader == Loader.Spinner)
-                {
-                    <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
-                        <i class="fa-solid fa-spinner fa-spin"></i>
-                    </div>
-                }
+                    @if (loader == Loader.Spinner)
+                    {
+                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                        </div>
+                    }
 
-                @if (loader == Loader.ExclamationMark)
-                {
-                    <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
-                        <i class="fa-solid text-warning fa-triangle-exclamation"></i>
-                    </div>
-                }
+                    @if (loader == Loader.ExclamationMark)
+                    {
+                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
+                            <i class="fa-solid text-warning fa-triangle-exclamation"></i>
+                        </div>
+                    }
 
-                <div @ref="inputDropdown" class='input-dropdown @(showDropdown?"d-block":"d-none")'>
-                    <ul>
-                        @foreach (var product in foundProducts)
-                        {
-                            <li tabindex="0">@product.Name</li>
-                        }
-                    </ul>
+                    <div @ref="inputDropdown" class='input-dropdown @(showDropdown?"d-block":"d-none")'>
+                        <ul>
+                            @foreach (var product in foundProducts)
+                            {
+                                <li tabindex="0">@product.Name</li>
+                            }
+                        </ul>
+                    </div>
                 </div>
-            </div>
-            <div class="@(addButtonShow?"d-block":"d-none") col-2">
-                <button title="Add to database" @onclick="AddProduct" style="margin:0 !important;" class='input-group-text cursor-pointer btn btn-success ml-4 rounded control-form @(addButtonShow?"":"d-none")'>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database"></i></button>
+                <div class="@(addButtonShow?"d-block":"d-none") col-2">
+                    <button title="Add to database" @onclick="AddProduct" style="margin:0 !important;" class='input-group-text cursor-pointer btn btn-success ml-4 rounded control-form @(addButtonShow?"":"d-none")'>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database"></i></button>
+                </div>
             </div>
         </div>
     </div>
-    
 
+    @if (reloadPage)
+{
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%; background-color:gray;">
+        <div style="position:absolute; left:50%; top:50%; transform:translate(-50%, -50%);">
+            <button class="btn btn-primary" @onclick="Reload">Reload</button>
+        </div>
+    </div>
+}
 
-
-</div>
 
 @code {
     string text = "";
     bool addButtonShow = false;
     bool showDropdown = false;
     bool showLoader = false;
+    bool reloadPage = false;
     Loader loader = Loader.None;
 
     // timers ////////////////////////
     int timerToPerformSearch = 750; //
     int timerToAddProduct = 3000;   //
     int timerToInputReset = 60000;  //
-    //////////////////////////////////
+                                    //////////////////////////////////
 
     HashSet<POS_OS_GG.Models.ViewModels.ProductInfo> foundProducts = new();
 
@@ -69,9 +79,23 @@
 
     Timer timer;
 
+    string userId = string.Empty;
+
+    protected async override Task OnInitializedAsync()
+    {
+        var userAuthState = await AuthProvider.GetAuthenticationStateAsync();
+
+        userId = userAuthState.User.Claims.FirstOrDefault().Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            reloadPage = true;
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !reloadPage)
         {
             await JsRuntime.InvokeVoidAsync("focusElementOnKeyPress", input, inputDropdown);
 
@@ -188,7 +212,7 @@
 
     async Task AddProduct()
     {
-
+        await ProductService.RegisterProductAsync(text, userId);
     }
 
     void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
@@ -225,4 +249,8 @@
         ExclamationMark,
     }
 
+    void Reload()
+    {
+        NavigationManager.NavigateTo("/production/order", true);
+    }
 }
