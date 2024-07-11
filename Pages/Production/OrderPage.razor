@@ -50,7 +50,7 @@
                 <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-3" ContentAlignment="HorizontalAlignment.Center">Product Quantity can't be 0</MudAlert>
             }
 
-            @if (orderProducts.Count > 0)
+            @if (orderProducts is not null && orderProducts.Count > 0)
             {
                 @foreach (var product in orderProducts)
                 {
@@ -308,10 +308,19 @@
     {
         var result = await ProductService.RegisterProductAsync(text, userId);
 
-        if (result.IsSuccess)
-        {
-            await JsRuntime.InvokeVoidAsync("clearSearchInput", input);
-        }
+        if (!result.IsSuccess)
+            return;
+
+        var productResult = await ProductService.GetProductAsync(text);
+
+        if (!productResult.IsSuccess)
+            return;
+
+        await AddProductToCartAsync(productResult.Data);
+
+        text = "";
+
+        ClearSearchAsync();
     }
 
     async Task AddProductToCartAsync(ProductInfo product)
@@ -373,6 +382,7 @@
     async Task ClearSearchAsync()
     {
         await JsRuntime.InvokeVoidAsync("clearSearchInput", input);
+        loader = Loader.None;
         text = "";
         foundProducts = new();
     }
@@ -405,7 +415,7 @@
 
     public void Dispose()
     {
-        timer.Stop();
-        timer.Elapsed -= OnTimedEvent;
+        if(timer is not null)
+            timer.Elapsed -= OnTimedEvent;
     }
 }

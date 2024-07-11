@@ -4,6 +4,11 @@ using POS_OS_GG.Data;
 using POS_OS_GG.Helpers;
 using POS_OS_GG.Models;
 using POS_OS_GG.Models.ViewModels;
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+
 
 namespace POS_OS_GG.Services;
 
@@ -73,6 +78,34 @@ public class ProductService : BaseService
         catch
         {
             return _response.ServerError();
+        }
+    }
+    public async Task<RequestResponse<ProductInfo>> GetProductAsync(string searchText = "")
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                return _response.Fail<ProductInfo>(null, notification: false);
+            }
+
+            var searchLower = searchText.ToLower();
+
+            var product = await _context.Products.Include(x=>x.Category).Select(x=> new ProductInfo { 
+                Id = x.Id, 
+                Name = x.Name,
+            }).FirstOrDefaultAsync(p => p.Name == searchLower);
+
+            if (product == null)
+            {
+                return _response.Fail<ProductInfo>(null, message: "Product not found.");
+            }
+
+            return _response.Success(product, notification: false);
+        }
+        catch (Exception ex)
+        {
+            return _response.ServerError<ProductInfo>(message: ex.Message);
         }
     }
 
