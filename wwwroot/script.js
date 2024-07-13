@@ -1,3 +1,4 @@
+// navigating dropdown
 window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
     //get ul li list of elements from child elements of inputdropdown
     let focusedElementIndex = 0;
@@ -13,7 +14,7 @@ window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
     document.addEventListener('keydown', (event) => {
 
         // I want to check event key agains all the letters except arrows up and down
-        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp'){
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
             inputElement.focus();
         }
 
@@ -49,7 +50,7 @@ window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
                 focusedElementIndex = 0;
                 return;
             }
-
+            6
             focusedElementIndex--;
 
             if (focusedElementIndex < 0) {
@@ -58,16 +59,7 @@ window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
 
             list[focusedElementIndex].focus();
         }
-
-
-        
-
-        console.log(event.key);
-
     });
-
-
-
 };
 
 
@@ -76,4 +68,46 @@ window.clearSearchInput = (inputElement) => {
         inputElement.value = "";
         inputElement.blur();
     }
+}
+
+// blur the input if the active element is not found-product
+window.onInputBlur = (DotNetHelper, inputElement) => {
+    inputElement.addEventListener('blur', (event) => {
+
+        setTimeout(() => {
+            let activeElement = document.activeElement;
+            if (activeElement.classList.contains("found-product")) {
+                return;
+            }
+            inputElement.blur();
+            /* if (list[i] === document.activeElement) {
+                 console.log("Element is active:", list[i]);
+                 return;
+             }*/
+            DotNetHelper.invokeMethodAsync('InputBlur');
+        }, 20);
+       
+    });
+}
+
+// if mouse is clicked outside input or dropdown
+window.onMouseClick = (DotNetHelper) => {
+    document.addEventListener('click', (event) => {
+        var clickedElement = event.target;
+        console.log(clickedElement);
+        if (clickedElement.classList.contains("search-input") || clickedElement.classList.contains("found-product") || clickedElement.classList.contains("add-product-button")) {
+            return;
+        }
+        DotNetHelper.invokeMethodAsync('OnMouseClicked');
+    });
+}
+
+// if esc is clicked on any part of the document
+window.onEscClicked = (DotNetHelper) => {
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' || event.keyCode === 27) {
+            var focusedElement = document.activeElement;
+            DotNetHelper.invokeMethodAsync('OnEscClicked');
+        }
+    });
 }

@@ -58,7 +58,7 @@ public class ProductService : BaseService
 
             Product productInfo = new Product
             {
-                Name = productName,
+                Name = productName.ToUpper(),
                 CategoryId = 1,
                 UserRegistratedId = userId,
             };

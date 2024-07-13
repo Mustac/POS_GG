@@ -7,6 +7,7 @@
 @implements IDisposable
 @using System.Timers;
 @using POS_OS_GG.Helpers
+@using System.Diagnostics
 
 
 <div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto">
@@ -14,7 +15,7 @@
         <div @ref="inputDropdown" class="row d-flex position-relative">
             <div class="position-relative" style="flex:9">
                 <div style="width:100%;">
-                    <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded w-100" @bind="text" @oninput="InputChanged">
+                    <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged">
                     @if (loader == Loader.Spinner)
                     {
                         <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
@@ -30,18 +31,18 @@
                     }
                 </div>
             </div>
-            <div class='input-dropdown shadow-lg px-3 @(showDropdown?"d-block":"d-none")'>
+            <div class='input-dropdown shadow-lg @(showDropdown?"d-block":"d-none")'>
                 <div @ref="inputDropdown">
                     <ul>
                         @foreach (var product in foundProducts)
                         {
-                            <li @onclick="@(()=>AddProductToCartAsync(product))" tabindex="0">@product.Name</li>
+                            <li class="found-product" @onkeydown="@((e)=>AddProductToCartWithEnterAsync(product, e.Key))" @onclick="@(()=>AddProductToCartAsync(product))" tabindex="0">@product.Name.ToUpper()</li>
                         }
                     </ul>
                 </div>
             </div>
             <div class='@(addButtonShow?"":"d-none") ml-0' style="flex:1; padding-left:0 !important;">
-                <button title="Add to database" @onclick="AddProductToDbAsync" style="margin:0 !important;" class='input-group-text cursor-pointer btn btn-success rounded control-form '>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database"></i></button>
+                <button title="Add to database" @onclick="AddProductToDbAsync" style="margin:0 !important; pointer-events:none;" class='add-product-button input-group-text cursor-pointer btn btn-success rounded control-form '>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database"></i></button>
             </div>
         </div>
         <div class="row">
@@ -64,7 +65,7 @@
                             <div class="d-flex justify-content-between align-content-center ">
                                 <div class="border border-0 border-bottom d-flex justify-content-between fw-bolder mb-2 border-dark" style="width:100%">
                                     <div>
-                                        @product.Name
+                                        @product.Name.ToUpper()
                                     </div>
                                     <div class="@(product.Quantity == 0?"text-danger":"text-dark")">
                                         @product.Quantity @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")
@@ -191,7 +192,13 @@
     {
         if (firstRender && !reloadPage)
         {
+            var objRefrence = DotNetObjectReference.Create(this);
+
             await JsRuntime.InvokeVoidAsync("focusElementOnKeyPress", input, inputDropdown);
+
+            await JsRuntime.InvokeVoidAsync("onMouseClick", objRefrence);
+            await JsRuntime.InvokeVoidAsync("onEscClicked", objRefrence);
+            await JsRuntime.InvokeVoidAsync("onInputBlur", objRefrence, input);
 
             timer = new Timer(1000);
             timer.Enabled = true;
@@ -260,11 +267,37 @@
     async Task PerformSearch()
     {
 
-        var response = await ProductService.GetProductsAsync(text);
+        var response = await ProductService.GetProductsAsync(text.ToUpper());
 
         if (response.IsSuccess)
         {
-            foundProducts = response.Data;
+
+
+            if(orderProducts.Count > 0)
+            {
+                foreach(var responseProduct in response.Data)
+                {
+                bool productFound = false;
+                    foreach(var orderProduct in orderProducts)
+                    {
+                        if(responseProduct.Name == orderProduct.Name)
+                        {
+                            productFound = true;
+                            break;
+                        }
+
+                    }
+
+                    if (productFound)
+                    {
+                        response.Data.Remove(responseProduct);    
+                    }
+
+                }
+
+            }
+                foundProducts = response.Data;
+
         }
 
         showDropdown = foundProducts is not null && foundProducts.Count > 0;
@@ -281,7 +314,7 @@
             bool productFound = false;
             foreach (var foundProduct in foundProducts)
             {
-                if (text.ToLower() == foundProduct.Name.ToLower())
+                if (text == foundProduct.Name)
                 {
                     productFound = true;
                     break;
@@ -298,6 +331,9 @@
                 loader = Loader.None;
                 HideAddButton();
             }
+
+
+
         }
 
         StateHasChanged();
@@ -320,7 +356,7 @@
 
         text = "";
 
-        ClearSearchAsync();
+        await ClearSearchAsync();
     }
 
     async Task AddProductToCartAsync(ProductInfo product)
@@ -328,6 +364,14 @@
         orderProducts.Add(product);
         await ClearSearchAsync();
         StateHasChanged();
+    }
+
+    async Task AddProductToCartWithEnterAsync(ProductInfo product, string key)
+    {
+        if(key == "Enter")
+        {
+            await AddProductToCartAsync(product);
+        }
     }
 
     private void RemoveFromCart(ProductInfo product)
@@ -384,7 +428,11 @@
         await JsRuntime.InvokeVoidAsync("clearSearchInput", input);
         loader = Loader.None;
         text = "";
+        HideAddButton();
+        showDropdown = false;
         foundProducts = new();
+        await JsRuntime.InvokeVoidAsync("console.log", "clearSearch");
+        StateHasChanged();
     }
 
 
@@ -411,6 +459,26 @@
     void Reload()
     {
         NavigationManager.NavigateTo("/production/order", true);
+    }
+
+    [JSInvokable("InputBlur")]
+    public async Task OnInputBlurTriggered()
+    {
+        await ClearSearchAsync();
+        searchCancellationTokenSource?.Cancel();
+    }
+
+    [JSInvokable("OnMouseClicked")]
+    public async Task MouseClicked()
+    {
+        await ClearSearchAsync();
+    }
+
+    [JSInvokable("OnEscClicked")]
+    public async Task EscClicked()
+    {
+        await JsRuntime.InvokeVoidAsync("console.log", "Any ESC clicked");
+        await ClearSearchAsync();
     }
 
     public void Dispose()
