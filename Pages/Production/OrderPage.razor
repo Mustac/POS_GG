@@ -2,6 +2,7 @@
 @layout ProductionLayout
 @inject ProductService ProductService
 @inject AuthenticationStateProvider AuthProvider
+@inject OrderService OrderService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
 @implements IDisposable
@@ -12,23 +13,33 @@
 
 <div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto">
     <div class="container-fluid">
-        <div @ref="inputDropdown" class="row d-flex position-relative">
+        <div @ref="inputDropdown" class="row d-flex position-relative" >
             <div class="position-relative" style="flex:9">
                 <div style="width:100%;">
-                    <input @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged">
-                    @if (loader == Loader.Spinner)
+                    <input autocomplete="off" @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged" @onfocus="InputFocus">
+                    @if (loader != Loader.None)
                     {
                         <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
-                            <i class="fa-solid fa-spinner fa-spin"></i>
+
+                            @if (loader == Loader.Spinner)
+                            {
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                            }
+
+                            @if (loader == Loader.ExclamationMark)
+                            {
+                                <i class="fa-solid text-warning fa-triangle-exclamation"></i>
+                            }
+
+                            @if (loader == Loader.CheckMark)
+                            {
+                                <i class="fa-solid text-success fa-circle-check"></i>
+                            }
+
                         </div>
                     }
 
-                    @if (loader == Loader.ExclamationMark)
-                    {
-                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
-                            <i class="fa-solid text-warning fa-triangle-exclamation"></i>
-                        </div>
-                    }
+
                 </div>
             </div>
             <div class='input-dropdown shadow-lg @(showDropdown?"d-block":"d-none")'>
@@ -41,97 +52,101 @@
                     </ul>
                 </div>
             </div>
-            <div class='@(addButtonShow?"":"d-none") ml-0' style="flex:1; padding-left:0 !important;">
-                <button title="Add to database" @onclick="AddProductToDbAsync" style="margin:0 !important; pointer-events:none;" class='add-product-button input-group-text cursor-pointer btn btn-success rounded control-form '>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database"></i></button>
+            <div class='@(addButtonShow?"":"d-none") ml-0 ' style="flex:1; padding-left:0 !important;">
+                <button title="Add to database" @onclick="AddProductToDbAsync" style="margin:0 !important;" class='add-product-button input-group-text cursor-pointer btn btn-success rounded control-form '>@(timerSecs < 5 ? "" : timerSecs.ToString() + " |") <i class="fa-solid fa-database" style="pointer-events:none"></i></button>
             </div>
         </div>
-        <div class="row">
-            @if (zeroOrderError)
-            {
-                <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-3" ContentAlignment="HorizontalAlignment.Center">Product Quantity can't be 0</MudAlert>
-            }
-
-            @if (orderProducts is not null && orderProducts.Count > 0)
-            {
-                @foreach (var product in orderProducts)
+        <div class="row mt-3">
+            <div class="col-12">
+                @if (zeroOrderError)
                 {
-                    @if (!string.IsNullOrEmpty(product.Name))
-                    {
-                        <div class="bg-light text-dark p-3 my-4 rounded position-relative">
-                            <div @onclick="@(()=>RemoveFromCart(product))" style="position:absolute; left:-25px; top:20%; transform:translateY(-50%); cursor:pointer; width:30px; height:30px;" class="bg-danger rounded border border-dark d-flex justify-content-center align-items-center">
-                                <i class="fa-solid fa-trash-can text-white"></i>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-content-center ">
-                                <div class="border border-0 border-bottom d-flex justify-content-between fw-bolder mb-2 border-dark" style="width:100%">
-                                    <div>
-                                        @product.Name.ToUpper()
-                                    </div>
-                                    <div class="@(product.Quantity == 0?"text-danger":"text-dark")">
-                                        @product.Quantity @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <div>
-                                        <b>Unit : @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")</b>
-                                    </div>
-                                    <div class="mt-2">
-                                        <button class="btn btn-sm  @(product.Measurement == (int)Measurement.Pcs?"btn-primary":"btn-outline-primary")" @onclick="@(()=>ChangeMeasurement(product, Measurement.Pcs))">Pcs</button>
-                                        <button class="btn btn-sm @(product.Measurement == (int)Measurement.Kg?"btn-primary":"btn-outline-primary")  " @onclick="@(()=>ChangeMeasurement(product, Measurement.Kg))">Kg</button>
-                                    </div>
-                                </div>
-                                <div>
-                                    @if (product.Measurement == (int)Measurement.Kg)
-                                    {
-
-                                        <div class="mb-2">
-                                            <div class="btn btn-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -0.1f))">
-                                                <i class="fa-solid fa-minus"></i> 0.1
-                                            </div>
-                                            <div class="btn btn-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 0.1f))">
-                                                <i class="fa-solid fa-plus"></i> 0.1
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -1))">
-                                                <i class="fa-solid fa-minus"></i> 1
-                                            </div>
-                                            <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 1))">
-                                                <i class="fa-solid fa-plus"></i> 1
-                                            </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="mb-2">
-                                            <div class="btn btn-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -1))">
-                                                <i class="fa-solid fa-minus"></i> 1
-                                            </div>
-                                            <div class="btn btn-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 1))">
-                                                <i class="fa-solid fa-plus"></i> 1
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -10))">
-                                                <i class="fa-solid fa-minus"></i> 10
-                                            </div>
-                                            <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 10))">
-                                                <i class="fa-solid fa-plus"></i> 10
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    }
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-3" ContentAlignment="HorizontalAlignment.Center">Product Quantity can't be 0</MudAlert>
                 }
 
-                @*   <div class="d-flex justify-content-end">
-            <MudButton OnClick="HandleOrder" Variant="Variant.Filled" Class="mt-3" Color="Color.Success" EndIcon="@Icons.Material.Filled.ArrowRight">Order Now</MudButton>
-            </div> *@
-            }
+                @if (orderProducts is not null && orderProducts.Count > 0)
+                {
+                    @foreach (var product in orderProducts)
+                    {
+                        @if (!string.IsNullOrEmpty(product.Name))
+                        {
+                            <div class="bg-light text-dark pt-2 pl-3 pr-3 pb-3 my-4 rounded position-relative">
+                                <div class="d-flex justify-content-end">
+                                    <div @onclick="@(()=>RemoveFromCart(product))" class="d-flex justify-content-center align-items-center cursor-pointer">
+                                        <i class="fa-solid fa-xmark" style="font-size:1.3rem;"></i>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-content-center ">
+                                    <div class="border border-0 border-bottom d-flex justify-content-between fw-bolder mb-2 border-dark" style="width:100%; font-size:1.1rem;">
+                                        <div>
+                                            @product.Name.ToUpper()
+                                        </div>
+                                        <div class="@(product.Quantity == 0?"text-danger":"text-dark")">
+                                            @product.Quantity @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <div>
+                                            <b>Unit : @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")</b>
+                                        </div>
+                                        <div class="mt-2">
+                                            <button class="btn btn-sm  @(product.Measurement == Measurement.Pcs?"btn-primary":"btn-outline-primary")" @onclick="@(()=>ChangeMeasurement(product, Measurement.Pcs))">Pcs</button>
+                                            <button class="btn btn-sm @(product.Measurement == Measurement.Kg?"btn-primary":"btn-outline-primary")" @onclick="@(()=>ChangeMeasurement(product, Measurement.Kg))">Kg</button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        @if (product.Measurement == (int)Measurement.Kg)
+                                        {
+
+                                            <div class="mb-2">
+                                                <div class="btn btn-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -0.1f))">
+                                                    <i class="fa-solid fa-minus"></i> 0.1
+                                                </div>
+                                                <div class="btn btn-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 0.1f))">
+                                                    <i class="fa-solid fa-plus"></i> 0.1
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -1))">
+                                                    <i class="fa-solid fa-minus"></i> 1
+                                                </div>
+                                                <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 1))">
+                                                    <i class="fa-solid fa-plus"></i> 1
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="mb-2">
+                                                <div class="btn btn-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -1))">
+                                                    <i class="fa-solid fa-minus"></i> 1
+                                                </div>
+                                                <div class="btn btn-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 1))">
+                                                    <i class="fa-solid fa-plus"></i> 1
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="btn btn-outline-danger btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, -10))">
+                                                    <i class="fa-solid fa-minus"></i> 10
+                                                </div>
+                                                <div class="btn btn-outline-success btn-sm mx-1" style="width:80px;" @onclick="@(()=>ChangeQuantity(product, 10))">
+                                                    <i class="fa-solid fa-plus"></i> 10
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    <div class="d-flex justify-content-end">
+                        <button @onclick="OrderProductsAsync" class='mt-1 btn btn-dark border border-white'>Order Now</button>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -186,6 +201,8 @@
         {
             reloadPage = true;
         }
+
+        var orders = await OrderService.GetOrdersAsync(userId);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -196,7 +213,6 @@
 
             await JsRuntime.InvokeVoidAsync("focusElementOnKeyPress", input, inputDropdown);
 
-            await JsRuntime.InvokeVoidAsync("onMouseClick", objRefrence);
             await JsRuntime.InvokeVoidAsync("onEscClicked", objRefrence);
             await JsRuntime.InvokeVoidAsync("onInputBlur", objRefrence, input);
 
@@ -264,6 +280,11 @@
         }
     }
 
+    async Task InputFocus()
+    {
+        await PerformSearch();
+    }
+
     async Task PerformSearch()
     {
 
@@ -273,14 +294,14 @@
         {
 
 
-            if(orderProducts.Count > 0)
+            if (orderProducts.Count > 0)
             {
-                foreach(var responseProduct in response.Data)
+                foreach (var responseProduct in response.Data)
                 {
-                bool productFound = false;
-                    foreach(var orderProduct in orderProducts)
+                    bool productFound = false;
+                    foreach (var orderProduct in orderProducts)
                     {
-                        if(responseProduct.Name == orderProduct.Name)
+                        if (responseProduct.Name == orderProduct.Name)
                         {
                             productFound = true;
                             break;
@@ -290,13 +311,13 @@
 
                     if (productFound)
                     {
-                        response.Data.Remove(responseProduct);    
+                        response.Data.Remove(responseProduct);
                     }
 
                 }
 
             }
-                foundProducts = response.Data;
+            foundProducts = response.Data;
 
         }
 
@@ -311,29 +332,27 @@
         }
         else
         {
-            bool productFound = false;
-            foreach (var foundProduct in foundProducts)
-            {
-                if (text == foundProduct.Name)
-                {
-                    productFound = true;
-                    break;
-                }
-            }
+            loader = Loader.CheckMark;
+            // bool productFound = false;
+            // foreach (var foundProduct in foundProducts)
+            // {
+            //     if (text.ToUpper() == foundProduct.Name.ToUpper())
+            //     {
+            //         productFound = true;
+            //         break;
+            //     }
+            // }
 
-            if (!productFound)
-            {
-                loader = Loader.ExclamationMark;
-                ShowAddButton();
-            }
-            else
-            {
-                loader = Loader.None;
-                HideAddButton();
-            }
-
-
-
+            // if (!productFound)
+            // {
+            //     loader = Loader.ExclamationMark;
+            //     ShowAddButton();
+            // }
+            // else
+            // {
+            //     loader = Loader.CheckMark;
+            //     HideAddButton();
+            // }
         }
 
         StateHasChanged();
@@ -346,7 +365,6 @@
 
         if (!result.IsSuccess)
             return;
-
         var productResult = await ProductService.GetProductAsync(text);
 
         if (!productResult.IsSuccess)
@@ -357,18 +375,29 @@
         text = "";
 
         await ClearSearchAsync();
+
+        StateHasChanged();
     }
 
     async Task AddProductToCartAsync(ProductInfo product)
     {
-        orderProducts.Add(product);
+        orderProducts.Add(new ProductInfo
+        {
+            Id = product.Id,
+            CategoryName = product.Name,
+            CategoryId = product.CategoryId,
+            CategoryIcon = product.CategoryIcon,
+            Quantity = 0,
+            Name = product.Name,
+            Measurement = Measurement.Pcs
+        });
         await ClearSearchAsync();
         StateHasChanged();
     }
 
     async Task AddProductToCartWithEnterAsync(ProductInfo product, string key)
     {
-        if(key == "Enter")
+        if (key == "Enter")
         {
             await AddProductToCartAsync(product);
         }
@@ -395,7 +424,7 @@
 
     void ChangeMeasurement(ProductInfo product, Measurement measurement)
     {
-        product.Measurement = (int)measurement;
+        product.Measurement = measurement;
         product.Quantity = 0;
     }
 
@@ -411,17 +440,8 @@
         product.Quantity += quantity;
         // round product.Quantity to 2 decimal places
         product.Quantity = (float)Math.Round(product.Quantity, 2);
-
-        if (zeroOrderError)
-        {
-            if (orderProducts.All(x => x.Quantity > 0))
-            {
-                zeroOrderError = false;
-                return;
-            }
-        }
-
     }
+
 
     async Task ClearSearchAsync()
     {
@@ -431,7 +451,6 @@
         HideAddButton();
         showDropdown = false;
         foundProducts = new();
-        await JsRuntime.InvokeVoidAsync("console.log", "clearSearch");
         StateHasChanged();
     }
 
@@ -449,30 +468,46 @@
         addButtonShow = false;
     }
 
-    public enum Loader
+    async Task OrderProductsAsync()
     {
-        None,
-        Spinner,
-        ExclamationMark,
+
+        if (orderProducts.Any(x => x.Quantity <= 0))
+        {
+            zeroOrderError = true;
+            return;
+        }
+
+        zeroOrderError = false;
+
+        var response = await OrderService.OrderProductsAsync(orderProducts, userId);
+
+        if (response.IsSuccess)
+            orderProducts = new();
+
+        loader = Loader.None;
     }
+
 
     void Reload()
     {
         NavigationManager.NavigateTo("/production/order", true);
     }
 
+    [JSInvokable()]
+    public void HideSearchDropDown()
+    {
+        showDropdown = false;
+        StateHasChanged();
+    }
+
     [JSInvokable("InputBlur")]
     public async Task OnInputBlurTriggered()
     {
-        await ClearSearchAsync();
+        showDropdown = false;
         searchCancellationTokenSource?.Cancel();
+        StateHasChanged();
     }
 
-    [JSInvokable("OnMouseClicked")]
-    public async Task MouseClicked()
-    {
-        await ClearSearchAsync();
-    }
 
     [JSInvokable("OnEscClicked")]
     public async Task EscClicked()
@@ -483,7 +518,15 @@
 
     public void Dispose()
     {
-        if(timer is not null)
+        if (timer is not null)
             timer.Elapsed -= OnTimedEvent;
+    }
+
+    public enum Loader
+    {
+        None,
+        Spinner,
+        ExclamationMark,
+        CheckMark
     }
 }

@@ -90,8 +90,8 @@
                                 <b>Unit : @(product.Measurement == (int)Measurement.Kg ? "Kg" : "Pcs")</b>
                             </div>
                             <div class="mt-2">
-                                <button class="btn btn-sm  @(product.Measurement == (int)Measurement.Pcs?"btn-primary":"btn-outline-primary")" @onclick="@(()=>ChangeMeasurement(product, Measurement.Pcs))">Pcs</button>
-                                <button class="btn btn-sm @(product.Measurement == (int)Measurement.Kg?"btn-primary":"btn-outline-primary")  " @onclick="@(()=>ChangeMeasurement(product, Measurement.Kg))">Kg</button>
+                                <button class="btn btn-sm  @(product.Measurement == Measurement.Pcs?"btn-primary":"btn-outline-primary")" @onclick="@(()=>ChangeMeasurement(product, Measurement.Pcs))">Pcs</button>
+                                <button class="btn btn-sm @(product.Measurement == Measurement.Kg?"btn-primary":"btn-outline-primary")  " @onclick="@(()=>ChangeMeasurement(product, Measurement.Kg))">Kg</button>
                             </div>
                         </div>
                         <div>
@@ -277,7 +277,7 @@
 
     void ChangeMeasurement(ProductInfo product, Measurement measurement)
     {
-        product.Measurement = (int)measurement;
+        product.Measurement = measurement;
         product.Quantity = 0;
     }
 

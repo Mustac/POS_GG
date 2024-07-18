@@ -10,7 +10,7 @@ public class ProductInfo
     public int CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
     public string CategoryIcon { get; set; } = string.Empty;
-    public int Measurement { get; set; } = (int)POS_OS_GG.Helpers.Measurement.Pcs;
+    public Measurement Measurement { get; set; } = POS_OS_GG.Helpers.Measurement.Pcs;
     public float Quantity { get; set; }
 
 

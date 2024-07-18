@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 using MudBlazor;
+using POS_GG_APP.Data;
 using POS_OS_GG.Data;
 using POS_OS_GG.Helpers;
 using POS_OS_GG.Models;
@@ -31,14 +32,15 @@ namespace POS_OS_GG.Services
                         OrderId = order.Id,
                         ProductId = orderProduct.Id,
                         Quantity = orderProduct.Quantity,
-                        Measurement = orderProduct.Measurement
+                        Measurement = (int)orderProduct.Measurement
                     });
                 }
 
                 await _context.Orders.AddAsync(order);
 
-                return await _context.SaveChangesAsync() > 0 ? 
-                    _response.Success() : _response.Fail();
+                return await _context.SaveChangesAsync() > 0 ?
+                    _response.Success(message:"Your order has been made") : 
+                    _response.Fail(message:"Order could not be made, please try again");
 
             }
             catch
@@ -46,5 +48,60 @@ namespace POS_OS_GG.Services
                 return _response.ServerError();
             }
         }
+
+        public async Task<RequestResponse<IEnumerable<OrderDTO>>> GetOrdersAsync(string userId)
+        {
+            try
+            {
+                try
+                {
+
+                    var orders = await _context.Orders.Where(x => x.UserOrderedId == userId).Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x=>x.UserDelivered).DefaultIfEmpty().ToListAsync();
+
+                    if (orders is null)
+                        return _response.NoContent<IEnumerable<OrderDTO>>(notification: false);
+
+                    List<OrderDTO> ordersDTO = new();
+
+
+                    foreach(var order in orders)
+                    {
+                        OrderDTO tempOrder = new OrderDTO
+                        {
+                            Message = order.Message,
+                            OrderId = order.Id,
+                            OrderStatus = order.TimeOrdered.IsDateValid() ? OrderStatus.Ordered : OrderStatus.OrderDelivered,
+                            TimeDelivered = order.TimeDelivered.IsDateValid()?order.TimeDelivered:default,
+                            TimeOrdered = order.TimeOrdered,
+                            UserDeliveredId = order.UserDeliveredId??"",
+                            UserDeliveredName = order.UserDelivered?.UserName??"",
+                            OrderedProducts = order.OrderProducts.Select(x=> new ProductInfo
+                            {
+                                Id = x.ProductId,
+                                Measurement = (Measurement)x.Measurement,
+                                Name = x.Product.Name,
+                                Quantity = x.Quantity
+                            })
+                        };
+
+                        ordersDTO.Add(tempOrder);
+                    }
+
+                    return _response.Success<IEnumerable<OrderDTO>>(ordersDTO, notification:false);
+
+
+                }
+                catch (Exception ex)
+                {
+                    return _response.ServerError<IEnumerable<OrderDTO>>(message: ex.Message);
+                }
+            }
+            catch
+            {
+                return _response.ServerError<IEnumerable<OrderDTO>>();
+            }
+        }
+
+
     }
 }

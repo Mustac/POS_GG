@@ -73,7 +73,7 @@ window.clearSearchInput = (inputElement) => {
 // blur the input if the active element is not found-product
 window.onInputBlur = (DotNetHelper, inputElement) => {
     inputElement.addEventListener('blur', (event) => {
-
+        console.log("Input blurred");
         setTimeout(() => {
             let activeElement = document.activeElement;
             if (activeElement.classList.contains("found-product")) {
@@ -85,7 +85,7 @@ window.onInputBlur = (DotNetHelper, inputElement) => {
                  return;
              }*/
             DotNetHelper.invokeMethodAsync('InputBlur');
-        }, 20);
+        }, 2);
        
     });
 }
@@ -93,12 +93,13 @@ window.onInputBlur = (DotNetHelper, inputElement) => {
 // if mouse is clicked outside input or dropdown
 window.onMouseClick = (DotNetHelper) => {
     document.addEventListener('click', (event) => {
+        event.stopPropagation();
         var clickedElement = event.target;
         console.log(clickedElement);
         if (clickedElement.classList.contains("search-input") || clickedElement.classList.contains("found-product") || clickedElement.classList.contains("add-product-button")) {
             return;
         }
-        DotNetHelper.invokeMethodAsync('OnMouseClicked');
+        DotNetHelper.invokeMethodAsync('HideSearchDropDown');
     });
 }
 

@@ -26,16 +26,13 @@ public class ProductService : BaseService
         {
             if (string.IsNullOrWhiteSpace(searchText))
             {
-                return _response.Success(_globalManager.Products, notification:false);
+                return _response.Success(_globalManager.Products.Take(10).ToHashSet<ProductInfo>(), notification: false);
             }
 
-            var searchLower = searchText.ToLower();
-
             var filteredProducts = _globalManager.Products
-                .Where(x => x.Name.ToLower().Contains(searchLower) ||
-                            x.Id.ToString().Contains(searchText) ||
-                            x.CategoryName.ToLower().Contains(searchLower))
-                .OrderByDescending(x=>x.Name)
+                .Where(x => x.Name.ToUpper().Contains(searchText.ToUpper()))
+                .OrderBy(x=>x.Name)
+                .Take(10)
                 .ToHashSet();
 
             return _response.Success(filteredProducts, notification:false);
@@ -56,13 +53,18 @@ public class ProductService : BaseService
             if(user is null)
                   return _response.Fail(message:"User does not exist, please relog" , notification: true);
 
+            var product = await _context.Products.FirstOrDefaultAsync(x=>x.Name.ToUpper() == productName.ToUpper());
+
+            if(product is not null)
+                return _response.Fail(message: "Product already exists", notification: true);
+
             Product productInfo = new Product
             {
                 Name = productName.ToUpper(),
                 CategoryId = 1,
                 UserRegistratedId = userId,
             };
-
+            
             await _context.Products.AddAsync(productInfo);
             var saveSuccess = await _context.SaveChangesAsync() > 0;
 
@@ -89,12 +91,11 @@ public class ProductService : BaseService
                 return _response.Fail<ProductInfo>(null, notification: false);
             }
 
-            var searchLower = searchText.ToLower();
-
-            var product = await _context.Products.Include(x=>x.Category).Select(x=> new ProductInfo { 
-                Id = x.Id, 
+            var product = await _context.Products.Include(x => x.Category).Select(x => new ProductInfo
+            {
+                Id = x.Id,
                 Name = x.Name,
-            }).FirstOrDefaultAsync(p => p.Name == searchLower);
+            }).FirstOrDefaultAsync(p => p.Name.ToUpper() == searchText.ToUpper());
 
             if (product == null)
             {
