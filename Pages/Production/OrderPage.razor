@@ -10,13 +10,72 @@
 @using POS_OS_GG.Helpers
 @using System.Diagnostics
 
+<div class="order-list overflow-auto">
+    <div class="m-3">
+        <div class="bg-dark p-3 rounded ">
+            <div class="d-flex justify-content-between h5">
+                <div>
+                    <span >Orders Made</span>
+                </div>
+                <div>@DateTime.UtcNow.Date.ToShortDateString()</div>
+            </div>
+            <hr class="my-2"/>
+                    <MudExpansionPanels Elevation="0">
+    @foreach(var order in orders)
+    {
+                    <MudExpansionPanel HideIcon="true" >
+                        <TitleContent>
+                            @("Order Time : " + @order.TimeOrdered.ToLongTimeString())
+
+                            @if (order.OrderStatus == OrderStatus.Ordered)
+                            {
+                                <div class="float-end">
+                                    <i class="fa-solid fa-list-ul"></i>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            }
+
+                            @if(order.OrderStatus == OrderStatus.OrderTaken)
+                            {
+                                <i class="fa-solid fa-dolly float-end text-success"></i>
+                            }
+
+                            @* <i class="fa-solid fa-dolly float-end text-success"></i> *@
+                        </TitleContent>
+                        <ChildContent>
+                            <ul>
+                                @foreach(var product in order.OrderedProducts){
+                                    <li class="order-product-list">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                            @product.Name
+                                            </div>
+                                            <div>
+                                            @product.Quantity @product.Measurement.ToString()
+                                            </div>
+                                        </div>
+                                        </li>
+                                }
+                            </ul>
+
+                                <MudButton Color="Color.Error" @onclick="@(()=>RemoveOrderAsync(order.OrderId))" Class="float-end my-2" Disabled="@(order.OrderStatus!=OrderStatus.Ordered)">Delete</MudButton>
+                        </ChildContent>
+                        
+                        </MudExpansionPanel>
+                     
+        
+    }
+                    </MudExpansionPanels>
+        </div>
+    </div>
+</div>
 
 <div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto">
     <div class="container-fluid">
         <div @ref="inputDropdown" class="row d-flex position-relative" >
             <div class="position-relative" style="flex:9">
                 <div style="width:100%;">
-                    <input autocomplete="off" @ref="input" id="autocomplete-input" type="text" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged" @onfocus="InputFocus">
+                    <input autocomplete="off" @ref="input" id="autocomplete-input" type="text" step="z-index:5;" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged" @onfocus="InputFocus">
                     @if (loader != Loader.None)
                     {
                         <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
@@ -141,10 +200,12 @@
                             </div>
                         }
                     }
-
+                    <label>Message</label>
+                    <textarea @oninput="TextAreaInput" class="form-control mb-3 mt-1 text-order-extra" style="resize:none; height:150px;"></textarea>
                     <div class="d-flex justify-content-end">
                         <button @onclick="OrderProductsAsync" class='mt-1 btn btn-dark border border-white'>Order Now</button>
                     </div>
+                    @areaText
                 }
             </div>
         </div>
@@ -163,6 +224,7 @@
 
 @code {
     string text = "";
+    string areaText = "";
     bool addButtonShow = false;
     bool showDropdown = false;
     bool showLoader = false;
@@ -178,6 +240,7 @@
 
     HashSet<POS_OS_GG.Models.ViewModels.ProductInfo> foundProducts = new();
     List<ProductInfo> orderProducts = new();
+    IEnumerable<OrderDTO> orders = new List<OrderDTO>();
 
     int timerSecs = 5;
 
@@ -202,7 +265,10 @@
             reloadPage = true;
         }
 
-        var orders = await OrderService.GetOrdersAsync(userId);
+        var fetchOrdersResponse = await OrderService.GetOrdersAsync(userId);
+
+        if (fetchOrdersResponse.IsSuccess)
+            orders = fetchOrdersResponse.Data;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -212,7 +278,6 @@
             var objRefrence = DotNetObjectReference.Create(this);
 
             await JsRuntime.InvokeVoidAsync("focusElementOnKeyPress", input, inputDropdown);
-
             await JsRuntime.InvokeVoidAsync("onEscClicked", objRefrence);
             await JsRuntime.InvokeVoidAsync("onInputBlur", objRefrence, input);
 
@@ -333,26 +398,6 @@
         else
         {
             loader = Loader.CheckMark;
-            // bool productFound = false;
-            // foreach (var foundProduct in foundProducts)
-            // {
-            //     if (text.ToUpper() == foundProduct.Name.ToUpper())
-            //     {
-            //         productFound = true;
-            //         break;
-            //     }
-            // }
-
-            // if (!productFound)
-            // {
-            //     loader = Loader.ExclamationMark;
-            //     ShowAddButton();
-            // }
-            // else
-            // {
-            //     loader = Loader.CheckMark;
-            //     HideAddButton();
-            // }
         }
 
         StateHasChanged();
@@ -479,14 +524,22 @@
 
         zeroOrderError = false;
 
-        var response = await OrderService.OrderProductsAsync(orderProducts, userId);
+        var response = await OrderService.OrderProductsAsync(orderProducts, areaText, userId);
 
         if (response.IsSuccess)
+        {
             orderProducts = new();
+            areaText = "";
+            text = "";
+        }
 
         loader = Loader.None;
     }
 
+    async Task RemoveOrderAsync(int id)
+    {
+        await OrderService.RemoveOrderAsync(id);
+    }
 
     void Reload()
     {
@@ -506,6 +559,11 @@
         showDropdown = false;
         searchCancellationTokenSource?.Cancel();
         StateHasChanged();
+    }
+
+    void TextAreaInput(ChangeEventArgs e)
+    {
+            areaText = e.Value.ToString();
     }
 
 

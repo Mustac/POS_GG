@@ -52,6 +52,16 @@ namespace POS_OS_GG.Helpers
             return new RequestResponse(message, false);
         }
 
+        public RequestResponse NoContent(string message = "No Content", bool notification = true)
+        {
+            if (notification)
+            {
+                _snackbar.Add(message, Severity.Info);
+            }
+
+            return new RequestResponse(message, false);
+        }
+
         public RequestResponse<T> NoContent<T>(string message = "No Content", bool notification = true)
         {
             if (notification)

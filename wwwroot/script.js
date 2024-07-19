@@ -3,7 +3,7 @@ window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
     //get ul li list of elements from child elements of inputdropdown
     let focusedElementIndex = 0;
     const list = inputDropdown.children[0].children;
-
+    const areaText = document.getElementsByClassName("text-order-extra")[0];
     inputElement.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowDown' && event.key === 'ArrowUp') {
             inputElement.blur();
@@ -12,13 +12,16 @@ window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
     });
 
     document.addEventListener('keydown', (event) => {
-
         // I want to check event key agains all the letters except arrows up and down
-        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-            inputElement.focus();
+        if (document.activeElement.classList.contains("text-order-extra")) {
+            return;
         }
 
-        if (event.key === 'ArrowDown') {
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+             inputElement.focus();
+        }
+
+        if (event.key === 'ArrowDown' && list !== null && list.length > 0) {
 
             const focusedElement = document.activeElement;
 
@@ -38,7 +41,7 @@ window.focusElementOnKeyPress = (inputElement, inputDropdown) => {
             list[focusedElementIndex].focus();
         }
 
-        if (event.key === 'ArrowUp') {
+        if (event.key === 'ArrowUp' && list !== null && list.length > 0) {
             const focusedElement = document.activeElement;
 
             console.log(list);

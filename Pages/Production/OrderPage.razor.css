@@ -44,3 +44,49 @@ ul li:hover {
         border: 1px solid #ced4da;
         background-color:rgb(255, 255, 255, 0.15);
     }
+
+.order-list {
+    position: absolute;
+    max-width: 500px;
+    width: 100%;
+    background-color: rgb(125,125,125);
+    right: 20px;
+    top: 20px;
+    bottom: 20px;
+    border-radius: 5px;
+    z-index: 999999;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+}
+
+.order-product-list{
+    border-bottom:1px solid white;
+}
+
+    .order-product-list:first-child {
+        border-start-start-radius: 5px;
+        border-start-end-radius: 5px;
+    }
+
+    .order-product-list:last-child {
+        border-end-end-radius: 5px;
+        border-end-start-radius: 5px;
+    }
+
+.panel-icon-red .mud-icon-root {
+    color: red;
+}
+
+.panel-icon-blue .mud-icon-root {
+    color: blue;
+}
+
+@media(max-width:1800px) {
+    .order-list {
+        right: 0px;
+        top: 0px;
+        bottom: 0px;
+        bottom: 0px;
+        max-width:unset;
+        border-radius:unset;
+    }
+}
