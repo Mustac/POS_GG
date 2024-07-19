@@ -1,6 +1,6 @@
 ﻿.input-dropdown {
     position: absolute;
-    z-index:99 !important;
+    z-index:2 !important;
     top: 48px;
 }
 
@@ -54,7 +54,7 @@ ul li:hover {
     top: 20px;
     bottom: 20px;
     border-radius: 5px;
-    z-index: 999999;
+    z-index: 3;
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
@@ -80,13 +80,13 @@ ul li:hover {
     color: blue;
 }
 
-@media(max-width:1800px) {
-    .order-list {
+@media(max-width:768px) {
+   /* .order-list {
         right: 0px;
         top: 0px;
         bottom: 0px;
         bottom: 0px;
         max-width:unset;
         border-radius:unset;
-    }
+    }*/
 }

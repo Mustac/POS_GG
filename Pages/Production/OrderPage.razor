@@ -5,80 +5,25 @@
 @inject OrderService OrderService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
+@inject MobileMenuService MobileMenuService
+@inject SignInManager<ApplicationUser> SignInManager
 @implements IDisposable
 @using System.Timers;
+@using Microsoft.AspNetCore.Identity
 @using POS_OS_GG.Helpers
 @using System.Diagnostics
 
-<div class="order-list overflow-auto">
-    <div class="m-3">
-        <div class="bg-dark p-3 rounded ">
-            <div class="d-flex justify-content-between h5">
-                <div>
-                    <span >Orders Made</span>
-                </div>
-                <div>@DateTime.UtcNow.Date.ToShortDateString()</div>
-            </div>
-            <hr class="my-2"/>
-                    <MudExpansionPanels Elevation="0">
-    @foreach(var order in orders)
-    {
-                    <MudExpansionPanel HideIcon="true" >
-                        <TitleContent>
-                            @("Order Time : " + @order.TimeOrdered.ToLongTimeString())
 
-                            @if (order.OrderStatus == OrderStatus.Ordered)
-                            {
-                                <div class="float-end">
-                                    <i class="fa-solid fa-list-ul"></i>
-                                    <i class="fa-solid fa-arrow-right"></i>
-                                </div>
-                            }
-
-                            @if(order.OrderStatus == OrderStatus.OrderTaken)
-                            {
-                                <i class="fa-solid fa-dolly float-end text-success"></i>
-                            }
-
-                            @* <i class="fa-solid fa-dolly float-end text-success"></i> *@
-                        </TitleContent>
-                        <ChildContent>
-                            <ul>
-                                @foreach(var product in order.OrderedProducts){
-                                    <li class="order-product-list">
-                                        <div class="d-flex justify-content-between">
-                                            <div>
-                                            @product.Name
-                                            </div>
-                                            <div>
-                                            @product.Quantity @product.Measurement.ToString()
-                                            </div>
-                                        </div>
-                                        </li>
-                                }
-                            </ul>
-
-                                <MudButton Color="Color.Error" @onclick="@(()=>RemoveOrderAsync(order.OrderId))" Class="float-end my-2" Disabled="@(order.OrderStatus!=OrderStatus.Ordered)">Delete</MudButton>
-                        </ChildContent>
-                        
-                        </MudExpansionPanel>
-                     
-        
-    }
-                    </MudExpansionPanels>
-        </div>
-    </div>
-</div>
-
-<div style="max-width:650px; width:100%; margin-top:50px; min-width:330px;" class="mx-auto">
+<div class="row" style="padding-top:50px; padding-bottom:80px; height:100%">
+    <div class="col-12 col-lg-7 p-0 p-lg-1" style="min-width:350px !important;">
     <div class="container-fluid">
         <div @ref="inputDropdown" class="row d-flex position-relative" >
             <div class="position-relative" style="flex:9">
                 <div style="width:100%;">
-                    <input autocomplete="off" @ref="input" id="autocomplete-input" type="text" step="z-index:5;" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged" @onfocus="InputFocus">
+                    <input autocomplete="off" @ref="input" id="autocomplete-input" type="text" step="z-index:1;" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged" @onfocus="InputFocus">
                     @if (loader != Loader.None)
                     {
-                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:999;">
+                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:1;">
 
                             @if (loader == Loader.Spinner)
                             {
@@ -116,7 +61,7 @@
             </div>
         </div>
         <div class="row mt-3">
-            <div class="col-12">
+            <div class="col-12 h-100 overflow-auto">
                 @if (zeroOrderError)
                 {
                     <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="mt-3" ContentAlignment="HorizontalAlignment.Center">Product Quantity can't be 0</MudAlert>
@@ -200,17 +145,96 @@
                             </div>
                         }
                     }
-                    <label>Message</label>
-                    <textarea @oninput="TextAreaInput" class="form-control mb-3 mt-1 text-order-extra" style="resize:none; height:150px;"></textarea>
-                    <div class="d-flex justify-content-end">
-                        <button @onclick="OrderProductsAsync" class='mt-1 btn btn-dark border border-white'>Order Now</button>
+                        @if (addMessage)
+                        {
+                            <label>Message</label>
+                        <textarea @oninput="TextAreaInput" class="form-control mb-3 mt-1 text-order-extra" style="resize:none; height:150px;"></textarea>
+                        }
+                        <div class="d-flex justify-content-between">
+                            @if (!addMessage)
+                            {
+                                <button @onclick="ShowMessage" class='mt-1 btn btn-success border border-white mr-2'>Add Message</button>
+                            }
+                            else
+                            {
+                                <button @onclick="ShowMessage" class='mt-1 btn btn-danger border border-white mr-2'>Remove Message</button>
+                            }
+                                <button @onclick="OrderProductsAsync" class='mt-1 btn btn-dark border border-white'>Order Now</button>
                     </div>
-                    @areaText
                 }
             </div>
         </div>
     </div>
 </div>
+
+    <div class="order-menu col-lg-5 @(mobileNavigation==MobileNavigation.History?"show-mobile-order-menu":"")">
+        <div class="bg-dark p-3 rounded ">
+            <div class="d-flex justify-content-between h5">
+                <div>
+                    <span>Order History</span>
+                </div>
+                <div>@DateTime.UtcNow.Date.ToShortDateString()</div>
+            </div>
+            <hr class="my-2" />
+            <MudExpansionPanels Elevation="0">
+                @foreach (var order in orders)
+                {
+                    <MudExpansionPanel HideIcon="true">
+                        <TitleContent>
+                            @("Order Time : " + @order.TimeOrdered.ToString("HH:MM"))
+
+                            @if (order.OrderStatus == OrderStatus.Ordered)
+                            {
+                                <div class="float-end">
+                                    <i class="fa-solid fa-list-ul"></i>
+                                    <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            }
+
+                            @if (order.OrderStatus == OrderStatus.OrderTaken)
+                            {
+                                <i class="fa-solid fa-dolly float-end text-success"></i>
+                            }
+
+                            @* <i class="fa-solid fa-dolly float-end text-success"></i> *@
+                        </TitleContent>
+                        <ChildContent>
+                            <ul>
+                                @foreach (var product in order.OrderedProducts)
+                                {
+                                    <li class="order-product-list">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                @product.Name
+                                            </div>
+                                            <div>
+                                                @product.Quantity @product.Measurement.ToString()
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+
+                            @if (!string.IsNullOrEmpty(order.Message))
+                            {
+                                <MudPaper Class="mt-2 p-2" Outlined="true">
+                                    <h6>Message : </h6>
+                                    @order.Message
+                                </MudPaper>
+                            }
+
+                            <MudButton Color="Color.Error" @onclick="@(()=>RemoveOrderAsync(order.OrderId))" Class="float-end my-2" Disabled="@(order.OrderStatus!=OrderStatus.Ordered)">Delete</MudButton>
+                        </ChildContent>
+
+                    </MudExpansionPanel>
+
+
+                }
+            </MudExpansionPanels>
+        </div>
+</div>
+</div>
+
 
 @if (reloadPage)
 {
@@ -230,6 +254,9 @@
     bool showLoader = false;
     bool reloadPage = false;
     bool zeroOrderError = false;
+    bool addMessage = false;
+
+    MobileNavigation mobileNavigation = MobileNavigation.Order;
 
     Loader loader = Loader.None;
 
@@ -240,7 +267,7 @@
 
     HashSet<POS_OS_GG.Models.ViewModels.ProductInfo> foundProducts = new();
     List<ProductInfo> orderProducts = new();
-    IEnumerable<OrderDTO> orders = new List<OrderDTO>();
+    List<OrderDTO> orders = new List<OrderDTO>();
 
     int timerSecs = 5;
 
@@ -258,7 +285,17 @@
     {
         var userAuthState = await AuthProvider.GetAuthenticationStateAsync();
 
-        userId = userAuthState.User.Claims.FirstOrDefault().Value;
+        var claim = userAuthState.User.Claims.FirstOrDefault();
+
+        if (claim is null || string.IsNullOrEmpty(claim.Value))
+        {
+            await SignInManager.SignOutAsync();
+            NavigationManager.NavigateTo("/");
+        }
+
+        userId = claim.Value;
+
+        MobileMenuService.OnMobileNavClicked += MobileNavClicked;
 
         if (string.IsNullOrEmpty(userId))
         {
@@ -268,7 +305,7 @@
         var fetchOrdersResponse = await OrderService.GetOrdersAsync(userId);
 
         if (fetchOrdersResponse.IsSuccess)
-            orders = fetchOrdersResponse.Data;
+            orders = fetchOrdersResponse.Data.ToList();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -287,6 +324,12 @@
             timer.Stop();
             addButtonShow = false;
         }
+    }
+
+    void MobileNavClicked(MobileNavigation navigation)
+    {
+        mobileNavigation = navigation;
+        StateHasChanged();
     }
 
     void InputChanged(ChangeEventArgs e)
@@ -343,6 +386,12 @@
         {
             // Ignore the cancellation
         }
+    }
+
+    void ShowMessage()
+    {
+        addMessage = !addMessage;
+        text = "";
     }
 
     async Task InputFocus()
@@ -451,6 +500,8 @@
     private void RemoveFromCart(ProductInfo product)
     {
         orderProducts.Remove(product);
+
+        StateHasChanged();
     }
 
     void OnTimedEvent(Object source, System.Timers.ElapsedEventArgs e)
@@ -531,6 +582,13 @@
             orderProducts = new();
             areaText = "";
             text = "";
+
+            var ordersResponse = await OrderService.GetOrdersAsync(userId);
+
+            if (ordersResponse.IsSuccess)
+                orders = ordersResponse.Data.ToList();
+
+            addMessage = false;
         }
 
         loader = Loader.None;
@@ -538,7 +596,15 @@
 
     async Task RemoveOrderAsync(int id)
     {
-        await OrderService.RemoveOrderAsync(id);
+        var response = await OrderService.RemoveOrderAsync(id);
+
+        if (response.IsSuccess)
+        {
+            var tempOrder = orders.FirstOrDefault(x => x.OrderId == id);
+
+            if (tempOrder is not null && tempOrder.OrderId != 0)
+                orders.Remove(tempOrder);
+        }
     }
 
     void Reload()
@@ -578,6 +644,8 @@
     {
         if (timer is not null)
             timer.Elapsed -= OnTimedEvent;
+
+        MobileMenuService.OnMobileNavClicked -= MobileNavClicked;
     }
 
     public enum Loader

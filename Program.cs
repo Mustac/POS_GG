@@ -58,6 +58,7 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddBlazoredToast();
 
 builder.Services.AddScoped<UserManagerService>();
+builder.Services.AddScoped<MobileMenuService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<OrderService>();
 

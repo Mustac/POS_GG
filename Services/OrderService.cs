@@ -23,6 +23,7 @@ namespace POS_OS_GG.Services
                     TimeOrdered = DateTime.UtcNow,
                     UserOrderedId = userId,
                     OrderProducts = new List<OrderProduct>(),
+                    Message = message
                 };
 
                 foreach (var orderProduct in orderProducts)
@@ -33,12 +34,6 @@ namespace POS_OS_GG.Services
                         ProductId = orderProduct.Id,
                         Quantity = orderProduct.Quantity,
                         Measurement = (int)orderProduct.Measurement,
-                        Order = new Order()
-                        {
-                            Message = message,
-                            TimeOrdered = DateTime.UtcNow,
-                            UserOrderedId = userId
-                        }
                     });
                 }
 
@@ -63,14 +58,19 @@ namespace POS_OS_GG.Services
 
                 var orders = await _context.Orders.Where(x => x.UserOrderedId == userId).Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
 
-                if (orders is null)
+                
+                if (orders is null || orders.Count == 0)
                     return _response.NoContent<IEnumerable<OrderDTO>>(notification: false);
 
                 List<OrderDTO> ordersDTO = new();
 
+                
 
                 foreach (var order in orders)
                 {
+                    if (order is null)
+                        continue;
+
                     OrderDTO tempOrder = new OrderDTO
                     {
                         Message = order.Message,

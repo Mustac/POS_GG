@@ -1,11 +1,16 @@
 ﻿@inherits LayoutComponentBase
+@inject MobileMenuService MobileMenuService
 
 <MudThemeProvider IsDarkMode="true" />
 <MudDialogProvider />
-<MudSnackbarProvider />
+<MudSnackbarProvider Style="margin-bottom:50px;"/>
 
-<div style="position:absolute; left:0; top:0;" class="w-100 h-100 overflow-hidden">
+<div class="container">
     @Body
+</div>
+<div class="mobile-menu text-dark">
+    <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.Order))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.Order?"active":"")"><i class="fa-solid fa-list"></i> Order</div>
+    <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.History))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.History?"active":"")"><i class="fa-solid fa-list-check"></i> History</div>
 </div>
 
 
