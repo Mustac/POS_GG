@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using POS_OS_GG.Data;
@@ -11,9 +12,11 @@ using POS_OS_GG.Data;
 namespace POS_OS_GG.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240720192935_setNullProductUserId")]
+    partial class setNullProductUserId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -273,6 +276,7 @@ namespace POS_OS_GG.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("UserOrderedId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -409,12 +413,14 @@ namespace POS_OS_GG.Migrations
                     b.HasOne("POS_GG_APP.Models.ApplicationUser", "UserDelivered")
                         .WithMany("OrdersDelivered")
                         .HasForeignKey("UserDeliveredId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("POS_GG_APP.Models.ApplicationUser", "UserOrdered")
                         .WithMany("OrdersMade")
                         .HasForeignKey("UserOrderedId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("UserDelivered");
 

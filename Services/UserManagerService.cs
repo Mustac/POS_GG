@@ -13,6 +13,7 @@ namespace POS_OS_GG.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
 
+
         public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar) 
             : base(appDbContext, globalManager, snackbar)
         {
@@ -57,22 +58,42 @@ namespace POS_OS_GG.Services
                     return _response.Fail("User could not be found", notification: false);
                 }
 
+                var orders = await _context.Orders.Where(x=>x.UserOrderedId == userId).ToListAsync();
+
+              /*  foreach(var order in orders)
+                {
+                    order.UserDeliveredId = null;
+                }
+
+                var products = await _context.Products.Where(x=>x.UserRegistratedId == userId).ToListAsync();
+
+                foreach(var product in products)
+                {
+                    product.UserRegistratedId = null;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _context.RemoveRange(orders);
+
+                await _context.SaveChangesAsync();*/
+
                 // Attempt to delete the user
                 var deleteResult = await _userManager.DeleteAsync(user);
 
                 // Check if the deletion was successful
                 if (!deleteResult.Succeeded)
                 {
-                    return _response.Fail("User could not be deleted", notification: false);
+                    return _response.Fail("User could not be deleted", notification: true);
                 }
 
                 // Update the global user list and trigger the user change event
                 _globalManager.Users = await UpdateGlobalUserList();
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
-                return _response.Success("User has been deleted", notification: false);
+                return _response.Success("User has been deleted", notification: true);
             }
-            catch
+            catch(Exception ex)
             {
                 return _response.ServerError();
             }

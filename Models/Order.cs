@@ -11,13 +11,13 @@ namespace POS_OS_GG.Models
 
 
         [ForeignKey("UserOrdered")]
-        public string UserOrderedId { get; set; }
-        public ApplicationUser UserOrdered { get; set; }
+        public string? UserOrderedId { get; set; }
+        public ApplicationUser? UserOrdered { get; set; }
 
 
         [ForeignKey("UserDelivered")]
-        public string UserDeliveredId { get; set; }
-        public ApplicationUser UserDelivered { get; set; }
+        public string? UserDeliveredId { get; set; }
+        public ApplicationUser? UserDelivered { get; set; }
 
         public ICollection<OrderProduct> OrderProducts { get; set; }
     }

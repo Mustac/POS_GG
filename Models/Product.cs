@@ -9,8 +9,8 @@ namespace POS_OS_GG.Models
 
 
         [ForeignKey("ApplicationUser")]
-        public string UserRegistratedId { get; set; } = string.Empty;
-        public ApplicationUser ApplicationUser { get; set; }
+        public string? UserRegistratedId { get; set; } = string.Empty;
+        public ApplicationUser? ApplicationUser { get; set; }
 
 
         [ForeignKey("Category")]

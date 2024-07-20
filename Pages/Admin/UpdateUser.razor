@@ -11,20 +11,23 @@
             <DataAnnotationsValidator />
 
             <MudText Typo="Typo.h5">Update User</MudText>
-
+            @if (UserUpdate.CompanyId != 3795)
+            {
             <MudNumericField HideSpinButtons="true" TValue="int?" @bind-Value="UserUpdate.CompanyId" Label="Company ID" Immediate="true" For="@(() => UserUpdate.CompanyId)" Required="true" />
 
             <MudTextField @bind-Value="UserUpdate.Name" Label="Name" Immediate="true" For="@(() => UserUpdate.Name)" Required="true" />
 
-            <MudSelect T="string" Label="Role" @bind-Value="UserUpdate.Role" Immediate="true" For="@(() => UserUpdate.Role)" Required="true">
-                @if (UserState.User.IsInRole(Roles.Administrator))
-                {
-                    <MudSelectItem Value="@(Roles.Manager)">@Roles.Manager</MudSelectItem>
-                }
-                <MudSelectItem Value="@(Roles.Kitchen)">@Roles.Kitchen</MudSelectItem>
-                <MudSelectItem Value="@(Roles.Warehouse)">@Roles.Warehouse</MudSelectItem>
-                <MudSelectItem Value="@(Roles.Production)">@Roles.Production</MudSelectItem>
-            </MudSelect>
+            
+                <MudSelect T="string" Label="Role" @bind-Value="UserUpdate.Role" Immediate="true" For="@(() => UserUpdate.Role)" Required="true">
+                    @if (UserState.User.IsInRole(Roles.Administrator))
+                    {
+                        <MudSelectItem Value="@(Roles.Manager)">@Roles.Manager</MudSelectItem>
+                    }
+                    <MudSelectItem Value="@(Roles.Kitchen)">@Roles.Kitchen</MudSelectItem>
+                    <MudSelectItem Value="@(Roles.Warehouse)">@Roles.Warehouse</MudSelectItem>
+                    <MudSelectItem Value="@(Roles.Production)">@Roles.Production</MudSelectItem>
+                </MudSelect>
+            }
             <div class="mt-4 d-flex">
                 <MudButton ButtonType="ButtonType.Button" @onclick="Hide" Class="mr-1" Color="Color.Surface" Variant="Variant.Filled" FullWidth="true">Close</MudButton>
                 <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Info" FullWidth="true">Update</MudButton>

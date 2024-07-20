@@ -34,7 +34,7 @@ namespace POS_OS_GG.Data
                 .HasOne(p => p.ApplicationUser)
                 .WithMany(u => u.Products)
                 .HasForeignKey(p => p.UserRegistratedId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
 
             builder.Entity<Product>()
                 .HasOne(p => p.Category)
@@ -47,13 +47,13 @@ namespace POS_OS_GG.Data
                 .HasOne(o => o.UserOrdered)
                 .WithMany(u => u.OrdersMade)
                 .HasForeignKey(o => o.UserOrderedId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
 
             builder.Entity<Order>()
                 .HasOne(o => o.UserDelivered)
                 .WithMany(u => u.OrdersDelivered)
                 .HasForeignKey(o => o.UserDeliveredId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Configure OrderProduct relationships
             builder.Entity<OrderProduct>()
@@ -65,6 +65,7 @@ namespace POS_OS_GG.Data
                 .HasOne(op => op.Product)
                 .WithMany(o => o.OrderProducts)
                 .HasForeignKey(op => op.ProductId);
+
 
 
         }

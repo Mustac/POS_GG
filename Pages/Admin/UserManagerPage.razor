@@ -29,7 +29,7 @@
                     @if (CurrentUser.User.IsInRole(Roles.Administrator))
                     {
                         <MudButton Color="Color.Tertiary" OnClick="() => UpdateUser(context)" Style="margin-right: 4px; width:50px !important;"><i class="fa-solid fa-user-pen"></i></MudButton>
-                        <MudButton Color="Color.Error" OnClick="() => DeleteUser(context)"><i class="fa-solid fa-user-slash"></i></MudButton>
+                        <MudButton Color="Color.Error" Disabled="@(context.CompanyId==3795)" OnClick="() => DeleteUser(context)"><i class="fa-solid fa-user-slash"></i></MudButton>
                     } else @if (CurrentUser.User.IsInRole(Roles.Manager) && (context.Role == Roles.Administrator || context.Role == Roles.Manager))
                     {
                         <MudButton Color="Color.Inherit" Disabled Style="margin-right: 4px; width:50px !important;"><i class="fa-solid fa-user-pen"></i></MudButton>
