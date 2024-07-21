@@ -10,6 +10,7 @@
   <ItemGroup>
     <None Remove="Pages\Production\OrderPage.razor.css" />
     <None Remove="Pages\Production\OrderScreen.razor.css" />
+    <None Remove="Pages\Warehouse\FeederHomePage.razor.css" />
   </ItemGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
     <Content Include="Pages\Production\OrderScreen.razor.css" />
+    <Content Include="Pages\Warehouse\FeederHomePage.razor.css" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +34,12 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="7.0.12" />
     <PackageReference Include="MudBlazor" Version="6.20.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.18" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Shared\WarehouseLayout.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
   </ItemGroup>
 
 </Project>

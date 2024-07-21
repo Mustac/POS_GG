@@ -13,5 +13,7 @@ namespace POS_OS_GG.Models.ViewModels
         public string Message { get; set; } = string.Empty;
         public string UserDeliveredId { get; set; } = string.Empty;
         public string UserDeliveredName { get; set; } = string.Empty;
+        public string UserOrderedName { get; set; } = string.Empty;
+
     }
 }

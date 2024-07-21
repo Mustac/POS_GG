@@ -50,21 +50,26 @@ namespace POS_OS_GG.Services
             }
         }
 
-        public async Task<RequestResponse<IEnumerable<OrderDTO>>> GetOrdersAsync(string userId)
+        public async Task<RequestResponse<List<OrderDTO>>> GetOrdersAsync(string userId="")
         {
 
             try
             {
+                List<Order> orders;
 
-                var orders = await _context.Orders.Where(x => x.UserOrderedId == userId).Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
+                if(userId != "")
+                {
+                    orders = await _context.Orders.Where(x => x.UserOrderedId == userId).Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
+                }
+                else
+                {
+                    orders = await _context.Orders.Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x => x.UserDelivered).Include(x=>x.UserOrdered).DefaultIfEmpty().ToListAsync();
+                }
 
-                
                 if (orders is null || orders.Count == 0)
-                    return _response.NoContent<IEnumerable<OrderDTO>>(notification: false);
+                        return _response.NoContent<List<OrderDTO>>(notification: false);
 
                 List<OrderDTO> ordersDTO = new();
-
-                
 
                 foreach (var order in orders)
                 {
@@ -80,6 +85,7 @@ namespace POS_OS_GG.Services
                         TimeOrdered = order.TimeOrdered,
                         UserDeliveredId = order.UserDeliveredId ?? "",
                         UserDeliveredName = order.UserDelivered?.UserName ?? "",
+                        UserOrderedName = order.UserOrdered?.UserName ?? "",
                         OrderedProducts = order.OrderProducts.Select(x => new ProductInfo
                         {
                             Id = x.ProductId,
@@ -92,13 +98,13 @@ namespace POS_OS_GG.Services
                     ordersDTO.Add(tempOrder);
                 }
 
-                return _response.Success<IEnumerable<OrderDTO>>(ordersDTO, notification: false);
+                return _response.Success<List<OrderDTO>>(ordersDTO, notification: false);
 
 
             }
             catch (Exception ex)
             {
-                return _response.ServerError<IEnumerable<OrderDTO>>(message: ex.Message);
+                return _response.ServerError<List<OrderDTO>>(message: ex.Message);
             }
         }
 

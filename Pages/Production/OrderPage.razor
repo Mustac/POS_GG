@@ -23,7 +23,7 @@
                     <input autocomplete="off" @ref="input" id="autocomplete-input" type="text" step="z-index:1;" class="form-control bg-dark text-light rounded w-100 search-input" @bind="text" @oninput="InputChanged" @onfocus="InputFocus">
                     @if (loader != Loader.None)
                     {
-                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:1;">
+                        <div style="position:absolute;right:25px;top:50%;transform:translateY(-50%);z-index:0;">
 
                             @if (loader == Loader.Spinner)
                             {
