@@ -22,6 +22,9 @@ namespace POS_OS_GG.Data
         {
             builder.Entity<ApplicationUser>().HasIndex(x => x.CompanyId).IsUnique();
             builder.Entity<Order>().Property(x=>x.UserDeliveredId).IsRequired(false);
+            builder.Entity<Order>().Property(x => x.TimeDelivered).IsRequired(false);
+            builder.Entity<Order>().Property(x => x.TimeOrderTaken).IsRequired(false);
+
 
             base.OnModelCreating(builder);
 

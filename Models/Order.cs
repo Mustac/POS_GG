@@ -7,8 +7,9 @@ namespace POS_OS_GG.Models
         public int Id { get; set; }
         public string Message { get; set; } = string.Empty;
         public DateTime TimeOrdered { get; set; }
-        public DateTime TimeDelivered { get; set; }
-
+        public DateTime? TimeOrderTaken { get; set; }
+        public DateTime? TimeDelivered { get; set; }
+        public int Status { get; set; }
 
         [ForeignKey("UserOrdered")]
         public string? UserOrderedId { get; set; }

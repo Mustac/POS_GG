@@ -181,9 +181,9 @@
                 {
                     <MudExpansionPanel HideIcon="true">
                         <TitleContent>
-                            @("Order Time : " + @order.TimeOrdered.ToString("HH:MM"))
+                            @("Order Time : " + @order.TimeOrdered.ToString("HH:mm"))
 
-                            @if (order.OrderStatus == OrderStatus.Ordered)
+                            @if (order.OrderStatus == OrderStatus.OrderStarted)
                             {
                                 <div class="float-end">
                                     <i class="fa-solid fa-list-ul"></i>
@@ -223,7 +223,7 @@
                                 </MudPaper>
                             }
 
-                            <MudButton Color="Color.Error" @onclick="@(()=>RemoveOrderAsync(order.OrderId))" Class="float-end my-2" Disabled="@(order.OrderStatus!=OrderStatus.Ordered)">Delete</MudButton>
+                            <MudButton Color="Color.Error" @onclick="@(()=>RemoveOrderAsync(order.OrderId))" Class="float-end my-2" Disabled="@(order.OrderStatus!=OrderStatus.OrderStarted)">Delete</MudButton>
                         </ChildContent>
 
                     </MudExpansionPanel>

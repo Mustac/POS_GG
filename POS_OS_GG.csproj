@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <None Remove="Pages\Production\OrderPage.razor.css" />
-    <None Remove="Pages\Production\OrderScreen.razor.css" />
+    <None Remove="Pages\Warehouse\FeederAvailableOrder.razor.css" />
     <None Remove="Pages\Warehouse\FeederHomePage.razor.css" />
   </ItemGroup>
 
@@ -17,8 +17,7 @@
     <Content Include="Pages\Production\OrderPage.razor.css">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
-    <Content Include="Pages\Production\OrderScreen.razor.css" />
-    <Content Include="Pages\Warehouse\FeederHomePage.razor.css" />
+    <Content Include="Pages\Warehouse\FeederAvailableOrder.razor.css" />
   </ItemGroup>
 
   <ItemGroup>

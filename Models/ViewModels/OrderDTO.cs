@@ -7,7 +7,8 @@ namespace POS_OS_GG.Models.ViewModels
     {
         public int OrderId { get; set; }
         public DateTime TimeOrdered { get; set; }
-        public DateTime TimeDelivered { get; set; }
+        public DateTime? TimeOrderTaken { get; set; }
+        public DateTime? TimeDelivered { get; set; }
         public OrderStatus OrderStatus { get; set; } = OrderStatus.None;
         public IEnumerable<ProductInfo> OrderedProducts { get; set; } = new List<ProductInfo>();
         public string Message { get; set; } = string.Empty;

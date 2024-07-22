@@ -1,0 +1,55 @@
+﻿@page "/feeder/available-orders"
+@layout WarehouseLayout
+@inject OrderService OrderService
+@inject GlobalManager GlobalManager
+@using System.Timers;
+@implements IDisposable
+
+<h4 class="text-center py-4">@currentTime.AddHours(2).ToString("HH:mm:ss")</h4>
+
+<div class="container-fluid my-4">
+    <div class="row justify-content-center">
+        <div class="col-4">
+            <AvailableOrders />
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private Timer _timer;
+    private DateTime currentTime;
+    int currentMinute = 0;
+
+    protected override void OnInitialized()
+    {
+        currentTime = DateTime.UtcNow;
+        currentMinute = currentTime.Minute;
+        _timer = new Timer(1000); // Set up the timer to tick every second
+        _timer.Elapsed += TimerTick;
+        _timer.Start();
+    }
+
+    private void TimerTick(object source, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            currentTime = DateTime.UtcNow;
+
+            if(currentTime.Minute != currentMinute)
+            {
+                currentMinute = currentTime.Minute;
+            }
+
+            StateHasChanged();
+        });
+    }
+
+  
+
+    public void Dispose()
+    {
+        _timer?.Stop();
+        _timer?.Dispose();
+    }
+}

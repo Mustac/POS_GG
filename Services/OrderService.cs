@@ -14,6 +14,7 @@ namespace POS_OS_GG.Services
         {
         }
 
+
         public async Task<RequestResponse> OrderProductsAsync(List<ProductInfo> orderProducts, string message, string userId)
         {
             try
@@ -23,7 +24,8 @@ namespace POS_OS_GG.Services
                     TimeOrdered = DateTime.UtcNow,
                     UserOrderedId = userId,
                     OrderProducts = new List<OrderProduct>(),
-                    Message = message
+                    Message = message,
+                    Status = (int)OrderStatus.OrderStarted
                 };
 
                 foreach (var orderProduct in orderProducts)
@@ -37,9 +39,19 @@ namespace POS_OS_GG.Services
                     });
                 }
 
-                await _context.Orders.AddAsync(order);
+                var orderResponse = await _context.Orders.AddAsync(order);
 
-                return await _context.SaveChangesAsync() > 0 ?
+                var saveSuccess = await _context.SaveChangesAsync() > 0;
+
+                if (saveSuccess)
+                {
+                    var orders = await GetOrdersAsync();
+                   
+                    if(orders is not null && orders.IsSuccess)
+                        _globalManager.OrderEvents.OnOrderMade?.Invoke(orders.Data);
+                }
+
+                return saveSuccess ?
                     _response.Success(message: "Your order has been made") :
                     _response.Fail(message: "Order could not be made, please try again");
 
@@ -59,11 +71,11 @@ namespace POS_OS_GG.Services
 
                 if(userId != "")
                 {
-                    orders = await _context.Orders.Where(x => x.UserOrderedId == userId).Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
+                    orders = await _context.Orders.Where(x => x.UserOrderedId == userId && x.TimeOrdered.Date == DateTime.UtcNow.Date).Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x=>x.Category).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
                 }
                 else
                 {
-                    orders = await _context.Orders.Include(x => x.OrderProducts).ThenInclude(x => x.Product).Include(x => x.UserDelivered).Include(x=>x.UserOrdered).DefaultIfEmpty().ToListAsync();
+                    orders = await _context.Orders.Where(x => x.TimeOrdered.Date == DateTime.UtcNow.Date).Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x=>x.Category).Include(x => x.UserDelivered).Include(x=>x.UserOrdered).DefaultIfEmpty().ToListAsync();
                 }
 
                 if (orders is null || orders.Count == 0)
@@ -76,26 +88,7 @@ namespace POS_OS_GG.Services
                     if (order is null)
                         continue;
 
-                    OrderDTO tempOrder = new OrderDTO
-                    {
-                        Message = order.Message,
-                        OrderId = order.Id,
-                        OrderStatus = order.TimeOrdered.IsDateValid() ? OrderStatus.Ordered : OrderStatus.OrderDelivered,
-                        TimeDelivered = order.TimeDelivered.IsDateValid() ? order.TimeDelivered : default,
-                        TimeOrdered = order.TimeOrdered,
-                        UserDeliveredId = order.UserDeliveredId ?? "",
-                        UserDeliveredName = order.UserDelivered?.UserName ?? "",
-                        UserOrderedName = order.UserOrdered?.UserName ?? "",
-                        OrderedProducts = order.OrderProducts.Select(x => new ProductInfo
-                        {
-                            Id = x.ProductId,
-                            Measurement = (Measurement)x.Measurement,
-                            Name = x.Product.Name,
-                            Quantity = x.Quantity
-                        })
-                    };
-
-                    ordersDTO.Add(tempOrder);
+                    ordersDTO.Add(order.ToDTO());
                 }
 
                 return _response.Success<List<OrderDTO>>(ordersDTO, notification: false);
@@ -120,7 +113,14 @@ namespace POS_OS_GG.Services
 
                 _context.Remove(order);
 
-                return await _context.SaveChangesAsync() > 0 ?
+                var removeResponse = await _context.SaveChangesAsync() > 0;
+
+                if (removeResponse)
+                {
+                    await _globalManager.OrderEvents?.OnUserOrderCancelAsync();
+                }
+
+                return removeResponse ?
                     _response.Success(message:"Order has been deleted") :
                     _response.Fail();
             }
@@ -130,6 +130,11 @@ namespace POS_OS_GG.Services
             }
 
         }
+
+
+        
+
+       
 
     }
 
