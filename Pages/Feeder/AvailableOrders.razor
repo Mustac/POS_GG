@@ -4,6 +4,7 @@
 @inject GlobalManager GlobalManager
 @implements IDisposable
 
+
 <h5 class="text-center mb-4">Available Orders</h5>
 @if (orders?.Count > 0)
 {
@@ -17,7 +18,7 @@
                 </div>
                 <div>
                     <span>
-                        <i class="fa-solid fa-clock pr-1 @(GetPassedMinutes(order.TimeOrdered) > 20 ? "text-danger" : "")"></i> @(GetPassedMinutes(order.TimeOrdered) == 0 ? "0" : GetPassedMinutes(order.TimeOrdered).ToString("#")) m
+                        <i class="fa-solid fa-clock pr-1 @(GetPassedMinutes(order.TimeOrdered) > 20 ? "text-danger" : "")"></i> @(GetPassedMinutes(order.TimeOrdered) < 1 ? "0" : GetPassedMinutes(order.TimeOrdered).ToString("#")) m
                     </span>
                 </div>
             </div>
@@ -38,6 +39,14 @@
                         </li>
                     }
                 </ul>
+                @if(!string.IsNullOrEmpty(order.Message))
+                {
+                    <div>
+                        <div class="bg-dark border rounded p-2">
+                        @order.Message
+                        </div>
+                    </div>
+                }
             </div>
             <div class="d-flex justify-content-end mt-2">
                 <MudButton Color="Color.Success" Variant="Variant.Text">Take Order&nbsp;<i class="fa-solid fa-arrow-right-to-bracket"></i></MudButton>

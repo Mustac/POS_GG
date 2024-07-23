@@ -3,6 +3,8 @@
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
+<AutoRouting />
+
 <MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -25,9 +27,9 @@
     </MudAppBar>
     <MudDrawer @bind-Open="@_drawerOpen">
         <MudNavMenu>
-            <MudNavLink Href="/admin/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
+            <MudNavLink Href="/administrator/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
             @* <MudNavLink Href="/servers" Match="NavLinkMatch.Prefix">Servers</MudNavLink> *@
-                <MudNavLink Href="/admin/user-manager" Match="NavLinkMatch.Prefix">User List</MudNavLink>
+            <MudNavLink Href="/administrator/user-manager" Match="NavLinkMatch.Prefix">User List</MudNavLink>
             @* <MudNavLink Href="/about" Match="NavLinkMatch.Prefix">About</MudNavLink> *@
         </MudNavMenu>
     </MudDrawer>

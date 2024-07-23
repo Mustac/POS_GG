@@ -3,6 +3,7 @@
     public enum MobileNavigation
     {
         Order,
-        History
+        History,
+        Settings
     }
 }

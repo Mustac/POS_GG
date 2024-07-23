@@ -9,15 +9,15 @@
 
   <ItemGroup>
     <None Remove="Pages\Production\OrderPage.razor.css" />
-    <None Remove="Pages\Warehouse\FeederAvailableOrder.razor.css" />
-    <None Remove="Pages\Warehouse\FeederHomePage.razor.css" />
+    <None Remove="Pages\Feeder\FeederAvailableOrder.razor.css" />
+    <None Remove="Pages\Feeder\FeederHomePage.razor.css" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Pages\Production\OrderPage.razor.css">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
     </Content>
-    <Content Include="Pages\Warehouse\FeederAvailableOrder.razor.css" />
+    <Content Include="Pages\Feeder\FeederAvailableOrder.razor.css" />
   </ItemGroup>
 
   <ItemGroup>

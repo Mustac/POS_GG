@@ -47,8 +47,8 @@ namespace POS_OS_GG.Services
                 {
                     var orders = await GetOrdersAsync();
                    
-                    if(orders is not null && orders.IsSuccess)
-                        _globalManager.OrderEvents.OnOrderMade?.Invoke(orders.Data);
+                    if(orders is not null && orders.IsSuccess && _globalManager.OrderEvents.OnOrderMade is not null)
+                        _globalManager.OrderEvents.OnOrderMade.Invoke(orders.Data);
                 }
 
                 return saveSuccess ?
@@ -71,11 +71,11 @@ namespace POS_OS_GG.Services
 
                 if(userId != "")
                 {
-                    orders = await _context.Orders.Where(x => x.UserOrderedId == userId && x.TimeOrdered.Date == DateTime.UtcNow.Date).Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x=>x.Category).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
+                    orders = await _context.Orders.Where(x => x.UserOrderedId == userId && x.TimeOrdered.Date == DateTime.UtcNow.AddHours(2).Date).Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x=>x.Category).Include(x => x.UserDelivered).DefaultIfEmpty().ToListAsync();
                 }
                 else
                 {
-                    orders = await _context.Orders.Where(x => x.TimeOrdered.Date == DateTime.UtcNow.Date).Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x=>x.Category).Include(x => x.UserDelivered).Include(x=>x.UserOrdered).DefaultIfEmpty().ToListAsync();
+                    orders = await _context.Orders.Where(x => x.TimeOrdered.Date == DateTime.UtcNow.AddHours(2).Date).Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x=>x.Category).Include(x => x.UserDelivered).Include(x=>x.UserOrdered).DefaultIfEmpty().ToListAsync();
                 }
 
                 if (orders is null || orders.Count == 0)
@@ -117,7 +117,8 @@ namespace POS_OS_GG.Services
 
                 if (removeResponse)
                 {
-                    await _globalManager.OrderEvents?.OnUserOrderCancelAsync();
+                    if(_globalManager.OrderEvents.OnUserOrderCancelAsync is not null)
+                        await _globalManager.OrderEvents.OnUserOrderCancelAsync.Invoke();
                 }
 
                 return removeResponse ?
@@ -128,15 +129,6 @@ namespace POS_OS_GG.Services
             {
                 return _response.ServerError(message: ex.Message);
             }
-
         }
-
-
-        
-
-       
-
     }
-
-
 }

@@ -11,6 +11,7 @@ namespace POS_OS_GG.Services
 
         public void MobileNavClicked(MobileNavigation mobileNavigation)
         {
+
             OnMobileNavClicked?.Invoke(mobileNavigation);
             MobileNavigation = mobileNavigation;
         }

@@ -1,0 +1,45 @@
+﻿@using System.Security.Claims
+@using POS_GG_APP
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+@code {
+    protected async override Task OnInitializedAsync()
+    {
+        var userState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+        var roleUrlSegment = new Uri(NavigationManager.Uri).PathAndQuery.Split("/")[1];
+
+        if (userState is null || userState.User is null || userState.User.Identity is null || !userState.User.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+
+        var user = userState.User;
+
+
+        if ((user.IsInRole(Roles.Administrator) || user.IsInRole(Roles.Manager)) && roleUrlSegment != "administrator")
+        {
+            NavigationManager.NavigateTo("/administrator");
+        }
+        else if (user.IsInRole(Roles.Warehouse) && roleUrlSegment != "warehouse")
+        {
+            NavigationManager.NavigateTo("/warehouse");
+        }
+        else if (user.IsInRole(Roles.Production) && roleUrlSegment != "production")
+        {
+            NavigationManager.NavigateTo("/production");
+        }
+        else if (user.IsInRole(Roles.Kitchen))
+        {
+        }
+        else if (!user.IsInRole(Roles.Administrator) || !user.IsInRole(Roles.Manager) || !user.IsInRole(Roles.Production) || !user.IsInRole(Roles.Kitchen) || !user.IsInRole(Roles.Warehouse))
+        {
+            return;
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+}

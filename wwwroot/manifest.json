@@ -1,0 +1,17 @@
+{
+  "name": "GG-Manager",
+  "short_name": "GGM",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "description": "A warehouse delivery application.",
+  "icons": [
+    {
+      "src": "icons/stocks.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    }
+  ]
+ 
+}

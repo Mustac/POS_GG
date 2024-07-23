@@ -1,44 +1,8 @@
-﻿@using System.Security.Claims
-@using POS_GG_APP
-@inherits LayoutComponentBase
-@inject AuthenticationStateProvider  AuthStateProvider
-@inject NavigationManager NavigationManager
+﻿@inherits LayoutComponentBase
 
+<AutoRouting/>
 
 @code {
-    protected async override Task OnInitializedAsync()
-    {
-        var userState = await AuthStateProvider.GetAuthenticationStateAsync();
-
-        if(userState is null || userState.User is null || userState.User.Identity is null || !userState.User.Identity.IsAuthenticated)
-        {
-            NavigationManager.NavigateTo("/login");
-        }
-
-        var user = userState.User;
-
-
-        if(user.IsInRole(Roles.Administrator) || user.IsInRole(Roles.Manager))
-        {
-            NavigationManager.NavigateTo("/admin/");
-        }
-        else if (user.IsInRole(Roles.Warehouse))
-        {
-            NavigationManager.NavigateTo("/feeder/available-orders");
-        }
-        else if (user.IsInRole(Roles.Production))
-        {
-            NavigationManager.NavigateTo("/production/order");
-        }
-        else if(user.IsInRole(Roles.Kitchen))
-        {
-        }
-        else 
-        {
-            NavigationManager.NavigateTo("/");
-        }
-
-
-    }
+   
 
 }
