@@ -1,10 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Azure;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Internal;
 using MudBlazor;
 using POS_GG_APP.Data;
 using POS_OS_GG.Data;
 using POS_OS_GG.Helpers;
 using POS_OS_GG.Models.ViewModels;
+using System.Configuration;
 
 namespace POS_OS_GG.Services
 {
@@ -14,8 +18,8 @@ namespace POS_OS_GG.Services
         private readonly RoleManager<IdentityRole> _roleManager;
 
 
-        public UserManagerService(ApplicationDbContext appDbContext, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar) 
-            : base(appDbContext, globalManager, snackbar)
+        public UserManagerService(DbContextOptions<ApplicationDbContext> options, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, GlobalManager globalManager, ISnackbar snackbar)
+            : base(options, globalManager, snackbar)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -29,10 +33,20 @@ namespace POS_OS_GG.Services
         {
             try
             {
-                if (_globalManager.Users is null)
-                    _globalManager.Users = await UpdateGlobalUserList();
 
-                return _response.Success(_globalManager.Users, notification:false);
+                if (_globalManager.Users is null)
+                {
+                    // Update global user list and trigger user change event
+                    var response = await UpdateGlobalUserList();
+
+                    if (response == null)
+                        return _response.Fail<HashSet<UserInfo>>(null, "Could not update the User", notification: true);
+
+
+                    _globalManager.Users = response.Data;
+                }
+
+                return _response.Success(_globalManager.Users, notification: false);
             }
             catch
             {
@@ -40,16 +54,16 @@ namespace POS_OS_GG.Services
             }
         }
 
+
+
         /// <summary>
         /// Deletes a user identified by the provided userId and triggers a user change event.
         /// </summary>
         /// <param name="userId">The ID of the user to be deleted.</param>
         /// <returns>A Task representing the asynchronous operation, containing a RequestResponse indicating the result of the deletion.</returns>
         public async Task<RequestResponse> DeleteAsync(string userId)
-        {
-            try
+            => await UseDbContextInstanceAsync(async context =>
             {
-                // Find the user by their ID
                 var user = await _userManager.FindByIdAsync(userId);
 
                 // Check if the user exists
@@ -58,25 +72,25 @@ namespace POS_OS_GG.Services
                     return _response.Fail("User could not be found", notification: false);
                 }
 
-                var orders = await _context.Orders.Where(x=>x.UserOrderedId == userId).ToListAsync();
+                var orders = await context.Orders.Where(x => x.UserOrderedId == userId).ToListAsync();
 
-              /*  foreach(var order in orders)
-                {
-                    order.UserDeliveredId = null;
-                }
+                /*  foreach(var order in orders)
+                  {
+                      order.UserDeliveredId = null;
+                  }
 
-                var products = await _context.Products.Where(x=>x.UserRegistratedId == userId).ToListAsync();
+                  var products = await _context.Products.Where(x=>x.UserRegistratedId == userId).ToListAsync();
 
-                foreach(var product in products)
-                {
-                    product.UserRegistratedId = null;
-                }
+                  foreach(var product in products)
+                  {
+                      product.UserRegistratedId = null;
+                  }
 
-                await _context.SaveChangesAsync();
+                  await _context.SaveChangesAsync();
 
-                _context.RemoveRange(orders);
+                  _context.RemoveRange(orders);
 
-                await _context.SaveChangesAsync();*/
+                  await _context.SaveChangesAsync();*/
 
                 // Attempt to delete the user
                 var deleteResult = await _userManager.DeleteAsync(user);
@@ -87,17 +101,20 @@ namespace POS_OS_GG.Services
                     return _response.Fail("User could not be deleted", notification: true);
                 }
 
-                // Update the global user list and trigger the user change event
-                _globalManager.Users = await UpdateGlobalUserList();
+                // Update global user list and trigger user change event
+                var response = await UpdateGlobalUserList();
+
+                if (response == null)
+                    return _response.Fail("Could not update the User", notification: true);
+
+
+                _globalManager.Users = response.Data;
+
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
                 return _response.Success("User has been deleted", notification: true);
-            }
-            catch(Exception ex)
-            {
-                return _response.ServerError();
-            }
-        }
+            });
+
 
 
         /// <summary>
@@ -140,7 +157,14 @@ namespace POS_OS_GG.Services
                 }
 
                 // Update global user list and trigger user change event
-                _globalManager.Users = await UpdateGlobalUserList();
+                var response = await UpdateGlobalUserList();
+
+                if (response == null)
+                    return _response.Fail("Could not update the User", notification: true);
+
+
+                _globalManager.Users = response.Data;
+
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
                 return _response.Success("User creation was successful", notification: true);
@@ -150,6 +174,7 @@ namespace POS_OS_GG.Services
                 return _response.ServerError();
             }
         }
+
 
 
         /// <summary>
@@ -162,7 +187,6 @@ namespace POS_OS_GG.Services
         {
             try
             {
-                // Find the user by their ID
                 var userToUpdate = await _userManager.FindByIdAsync(user.Id);
 
                 // Check if the user exists
@@ -211,10 +235,17 @@ namespace POS_OS_GG.Services
                 }
 
                 // Update global user list and trigger user change event
-                _globalManager.Users = await UpdateGlobalUserList();
+                var response = await UpdateGlobalUserList();
+
+                if (response == null)
+                    return _response.Fail("Could not update the User", notification: true);
+
+
+                _globalManager.Users = response.Data;
                 _globalManager.UserEvents.OnUsersChange?.Invoke();
 
                 return _response.Success("User role has been updated", notification: true);
+
             }
             catch
             {
@@ -223,25 +254,28 @@ namespace POS_OS_GG.Services
         }
 
 
+
         /// <summary>
         /// Retrives all the Users and parse it to HashSet<UserInfo>
         /// </summary>
         /// <returns></returns>
-        private async Task<HashSet<UserInfo>> UpdateGlobalUserList()
-        {
-            var users = (await _context.UserRoles
-                .Join(_context.ApplicationUsers, x => x.UserId, x => x.Id, (role, user) => new { role, user })
-                .Join(_context.Roles, x => x.role.RoleId, x => x.Id, (userRole, role) => new { userRole, role })
-                .Select(ur =>
-                    new UserInfo
-                    {
-                        Id = ur.userRole.user.Id,
-                        CompanyId = ur.userRole.user.CompanyId,
-                        Name = ur.userRole.user.UserName,
-                        Role = ur.role.Name
-                    }).ToListAsync()).ToHashSet();
+        private async Task<RequestResponse<HashSet<UserInfo>>> UpdateGlobalUserList()
+            => await UseDbContextInstanceAsync(async context =>
+            {
+                var users = (await context.UserRoles
+               .Join(context.ApplicationUsers, x => x.UserId, x => x.Id, (role, user) => new { role, user })
+               .Join(context.Roles, x => x.role.RoleId, x => x.Id, (userRole, role) => new { userRole, role })
+               .Select(ur =>
+                   new UserInfo
+                   {
+                       Id = ur.userRole.user.Id,
+                       CompanyId = ur.userRole.user.CompanyId,
+                       Name = ur.userRole.user.UserName,
+                       Role = ur.role.Name
+                   }).ToListAsync()).ToHashSet();
 
-            return users;
-        }
+                return _response.Success(users);
+            });
+
     }
 }

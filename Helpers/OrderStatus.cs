@@ -3,8 +3,8 @@
     public enum OrderStatus
     {
         None,
-        OrderStarted,
-        OrderTaken,
-        OrderDelivered
+        Started,
+        Taken,
+        Delivered
     }
 }

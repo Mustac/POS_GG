@@ -45,25 +45,26 @@ public static class MyExtensionMethods
     public static OrderDTO ToDTO(this Order order)
     {
         var orderDTO = new OrderDTO
-         {
-             OrderId = order.Id,
-             TimeOrdered = order.TimeOrdered.AddHours(2),
-             OrderStatus = (OrderStatus)order.Status,
-             OrderedProducts = order.OrderProducts.Select(op => new ProductInfo
-             {
-                 Id = op.Product.Id,
-                 Name = op.Product.Name,
-                 CategoryId = op.Product.CategoryId,
-                 CategoryName = op.Product.Category.Name,
-                 CategoryIcon = op.Product.Category.Icon, // Assuming Category has an Icon property
-                 Measurement = (Measurement)op.Measurement,
-                 Quantity = op.Quantity
-             }).ToList(),
-             Message = order.Message,
-             UserDeliveredId = order.UserDeliveredId ?? string.Empty,
-             UserDeliveredName = order.UserDelivered?.UserName ?? string.Empty, // Assuming UserDelivered has a UserName property
-             UserOrderedName = order.UserOrdered?.UserName ?? string.Empty // Assuming UserOrdered has a UserName property
-         };
+        {
+            OrderId = order.Id,
+
+            TimeOrdered = order.TimeOrdered.AddHours(2),
+            OrderStatus = (OrderStatus)order.Status,
+            OrderedProducts = order.OrderProducts.Select(op => new ProductInfo
+            {
+                Id = op.Product.Id,
+                Name = op.Product.Name,
+                CategoryId = op.Product.CategoryId,
+                CategoryName = op.Product.Category.Name,
+                CategoryIcon = op.Product.Category.Icon, // Assuming Category has an Icon property
+                Measurement = (Measurement)op.Measurement,
+                Quantity = op.Quantity
+            }).ToList(),
+            Message = order.Message,
+            UserDeliveredId = order.UserDeliveredId,
+             UserDeliveredName = order.UserDelivered?.UserName,
+             UserOrderedName = order.UserOrdered?.UserName
+        };
 
         if (order.TimeOrderTaken.HasValue)
         {
@@ -77,5 +78,10 @@ public static class MyExtensionMethods
         return orderDTO;
     }
 
-      
+    public static int GetPassedMinutes(this DateTime startTime)
+    {
+        return (int)(DateTime.UtcNow - startTime).TotalMinutes;
+    }
+
+
 }

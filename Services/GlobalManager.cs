@@ -26,7 +26,10 @@ namespace POS_OS_GG.Services
         public class OrderCallBack 
         {
             public Action<List<OrderDTO>>? OnOrderMade;
-            public Func<Task> OnUserOrderCancelAsync;
+            public Func<Task> OnUserOrderCancel;
+            public Action<OrderDTO> OnOrderStatusChange;
+            public Func<OrderDTO, Task> OnOrderStatusChangeAsync;
+
         }
     }
 }

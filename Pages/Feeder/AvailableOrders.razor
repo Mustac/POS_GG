@@ -5,7 +5,8 @@
 @implements IDisposable
 
 
-<h5 class="text-center mb-4">Available Orders</h5>
+<h5 class="mt-2 mb-2">Available Orders : </h5>
+<div style="border-bottom:2px dotted"></div>
 @if (orders?.Count > 0)
 {
     @foreach (var order in orders)
@@ -18,7 +19,7 @@
                 </div>
                 <div>
                     <span>
-                        <i class="fa-solid fa-clock pr-1 @(GetPassedMinutes(order.TimeOrdered) > 20 ? "text-danger" : "")"></i> @(GetPassedMinutes(order.TimeOrdered) < 1 ? "0" : GetPassedMinutes(order.TimeOrdered).ToString("#")) m
+                        <i class="fa-solid fa-clock pr-1 @(order.TimeOrdered.GetPassedMinutes() > 20 ? "text-danger" : "")"></i> @(order.TimeOrdered.GetPassedMinutes() < 1 ? "0" : order.TimeOrdered.GetPassedMinutes().ToString("#")) m
                     </span>
                 </div>
             </div>
@@ -49,14 +50,19 @@
                 }
             </div>
             <div class="d-flex justify-content-end mt-2">
-                <MudButton Color="Color.Success" Variant="Variant.Text">Take Order&nbsp;<i class="fa-solid fa-arrow-right-to-bracket"></i></MudButton>
+                <MudButton OnClick="@(()=>TakeOrderAsync(order))" Color="Color.Success" Variant="Variant.Text">Take Order&nbsp;<i class="fa-solid fa-arrow-right-to-bracket"></i></MudButton>
             </div>
         </MudPaper>
     }
 }
+else
+{
+}
 
 @code {
-    List<OrderDTO> orders = new List<OrderDTO>();
+
+    private List<OrderDTO> orders= new List<OrderDTO>();
+
     Timer timer;
     DateTime currentTime;
 
@@ -67,10 +73,11 @@
         timer.Elapsed += UpdateTime;
         timer.Start();
 
-        GlobalManager.OrderEvents.OnUserOrderCancelAsync += UserOrderCancel;
+        GlobalManager.OrderEvents.OnUserOrderCancel += UserOrderCancel;
         GlobalManager.OrderEvents.OnOrderMade += AddToOrder;
+        GlobalManager.OrderEvents.OnOrderStatusChange += OrderStatusChange;
 
-        var orderResponse = await OrderService.GetOrdersAsync();
+        var orderResponse = await OrderService.GetOrdersAsync(orderStatus:OrderStatus.Started);
 
         if (orderResponse.IsSuccess)
             orders = orderResponse.Data;
@@ -87,7 +94,7 @@
 
     public async Task UserOrderCancel()
     {
-        var orderResponse = await OrderService.GetOrdersAsync();
+        var orderResponse = await OrderService.GetOrdersAsync(orderStatus:OrderStatus.Started);
 
         if (orderResponse.IsSuccess)
             orders = orderResponse.Data;
@@ -96,7 +103,7 @@
                {
                    StateHasChanged();
                });
-        
+
     }
 
     public void AddToOrder(List<OrderDTO> orders)
@@ -108,16 +115,36 @@
         });
     }
 
-    double GetPassedMinutes(DateTime startTime)
+    public void OrderStatusChange(OrderDTO orderDTO)
     {
-        return (currentTime - startTime).TotalMinutes;
+        var order = orders.FirstOrDefault(x => x.OrderId == orderDTO.OrderId);
+
+        if (order is null && orderDTO.OrderStatus == OrderStatus.Started)
+        {
+            orders.Add(orderDTO);
+        } 
+        else
+        {
+            orders.Remove(order);
+        }
+
+        StateHasChanged();
+
+
+    }
+
+
+    async Task TakeOrderAsync(OrderDTO order)
+    {
+        var response = await OrderService.ChangeOrderStatusAsync(order.OrderId, OrderStatus.Taken);
     }
 
     public void Dispose()
     {
         timer?.Stop();
         timer?.Dispose();
-        GlobalManager.OrderEvents.OnUserOrderCancelAsync -= UserOrderCancel;
+        GlobalManager.OrderEvents.OnUserOrderCancel -= UserOrderCancel;
+        GlobalManager.OrderEvents.OnOrderStatusChange -= OrderStatusChange;
         GlobalManager.OrderEvents.OnOrderMade -= AddToOrder;
     }
 }

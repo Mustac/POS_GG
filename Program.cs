@@ -7,13 +7,14 @@ global using Blazored.LocalStorage;
 global using Blazored.Toast;
 global using Blazored.Toast.Services;
 global using POS_OS_GG.Models.ViewModels;
+global using POS_OS_GG.Data;
+global using POS_OS_GG.Helpers;
 
 
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI;
 using POS_OS_GG.Areas.Identity;
-using POS_OS_GG.Data;
 using POS_GG_APP.Data;
 using MudBlazor.Services;
 using POS_OS_GG.Services;

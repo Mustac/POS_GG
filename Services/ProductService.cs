@@ -15,7 +15,7 @@ namespace POS_OS_GG.Services;
 public class ProductService : BaseService
 {
 
-    public ProductService(ApplicationDbContext applicationDbContext, GlobalManager globalManager, ISnackbar snackbar) : base(applicationDbContext, globalManager, snackbar)
+    public ProductService(DbContextOptions<ApplicationDbContext> options, GlobalManager globalManager, ISnackbar snackbar) : base(options, globalManager, snackbar)
     {
     }
 
@@ -45,17 +45,16 @@ public class ProductService : BaseService
 
 
     public async Task<RequestResponse> RegisterProductAsync(string productName, string userId)
-    {
-        try
+        => await UseDbContextInstanceAsync(async context =>
         {
-            var user = await _context.Users.FindAsync(userId);
+            var user = await context.Users.FindAsync(userId);
 
-            if(user is null)
-                  return _response.Fail(message:"User does not exist, please relog" , notification: true);
+            if (user is null)
+                return _response.Fail(message: "User does not exist, please relog", notification: true);
 
-            var product = await _context.Products.FirstOrDefaultAsync(x=>x.Name.ToUpper() == productName.ToUpper());
+            var product = await context.Products.FirstOrDefaultAsync(x => x.Name.ToUpper() == productName.ToUpper());
 
-            if(product is not null)
+            if (product is not null)
                 return _response.Fail(message: "Product already exists", notification: true);
 
             Product productInfo = new Product
@@ -64,59 +63,61 @@ public class ProductService : BaseService
                 CategoryId = 1,
                 UserRegistratedId = userId,
             };
-            
-            await _context.Products.AddAsync(productInfo);
-            var saveSuccess = await _context.SaveChangesAsync() > 0;
+
+            await context.Products.AddAsync(productInfo);
+            var saveSuccess = await context.SaveChangesAsync() > 0;
 
             if (saveSuccess)
             {
-                _globalManager.Products = await UpdateProductsAsync();
+                _globalManager.Products = (await UpdateProductsAsync()).Data;
                 _globalManager.ProductEvents.OnProductsChange?.Invoke();
             }
-            
+
             return _response.Success(notification: true);
 
-        }
-        catch
-        {
-            return _response.ServerError();
-        }
-    }
+        });
+
+
     public async Task<RequestResponse<ProductInfo>> GetProductAsync(string searchText = "")
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                return _response.Fail<ProductInfo>(null, notification: false);
-            }
+     => await UseDbContextInstanceAsync(async context =>
+     {
+         if (string.IsNullOrWhiteSpace(searchText))
+         {
+             return _response.Fail<ProductInfo>(null, notification: false);
+         }
 
-            var product = await _context.Products.Include(x => x.Category).Select(x => new ProductInfo
-            {
-                Id = x.Id,
-                Name = x.Name,
-            }).FirstOrDefaultAsync(p => p.Name.ToUpper() == searchText.ToUpper());
+         var product = await context.Products.Include(x => x.Category).Select(x => new ProductInfo
+         {
+             Id = x.Id,
+             Name = x.Name,
+         }).FirstOrDefaultAsync(p => p.Name.ToUpper() == searchText.ToUpper());
 
-            if (product == null)
-            {
-                return _response.Fail<ProductInfo>(null, message: "Product not found.");
-            }
+         if (product == null)
+         {
+             return _response.Fail<ProductInfo>(null, message: "Product not found.");
+         }
 
-            return _response.Success(product, notification: false);
-        }
-        catch (Exception ex)
-        {
-            return _response.ServerError<ProductInfo>(message: ex.Message);
-        }
-    }
+         return _response.Success(product, notification: false);
+     });
 
 
-    private async Task<HashSet<ProductInfo>> UpdateProductsAsync()
-    {
-       return (await _context.Products.Include(x => x.Category)
+
+    private async Task<RequestResponse<HashSet<ProductInfo>>> UpdateProductsAsync()
+     => await UseDbContextInstanceAsync(async context =>
+     {
+         var updateProductResponse = (await context.Products.Include(x => x.Category)
             .Select(x => new ProductInfo { Id = x.Id, Name = x.Name, CategoryId = x.CategoryId, CategoryName = x.Category.Name, CategoryIcon = x.Category.Icon })
             .ToListAsync()).ToHashSet();
-    }}
+
+         return _response.Success(updateProductResponse, notification: false);
+     });
+
+
+ 
+}
+
+
+    
 
 
 
