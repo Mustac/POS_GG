@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design.Internal;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Internal;
 using MudBlazor;
 using POS_GG_APP.Data;
@@ -54,6 +55,16 @@ namespace POS_OS_GG.Services
             }
         }
 
+
+        public async Task<RequestResponse<ApplicationUser>> GetUserRawAsync(string userId)
+        => await UseDbContextInstanceAsync(async context =>
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+
+            return user is not null ?
+                _response.Success(user) :
+                _response.NoContent<ApplicationUser>();
+        });
 
 
         /// <summary>

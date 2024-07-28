@@ -11,8 +11,11 @@ namespace POS_OS_GG.Services;
 
 public class OrderService : BaseService
 {
-    public OrderService(DbContextOptions<ApplicationDbContext> options, GlobalManager globalManager, ISnackbar snackbar) : base(options, globalManager, snackbar)
+    private readonly UserManagerService _userManagerService;
+
+    public OrderService(DbContextOptions<ApplicationDbContext> options, GlobalManager globalManager, ISnackbar snackbar, UserManagerService userManagerService) : base(options, globalManager, snackbar)
     {
+        _userManagerService = userManagerService;
     }
 
 
@@ -138,30 +141,50 @@ public class OrderService : BaseService
             });
 
 
-    public async Task<RequestResponse> ChangeOrderStatusAsync(int orderId, OrderStatus orderStatus)
-             => await UseDbContextInstanceAsync(async context =>
-             {
-                 var order = await context.Orders.Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x => x.Category).Include(x => x.UserDelivered).Include(x=>x.UserOrdered).FirstOrDefaultAsync(x =>x.Id == orderId);
+    public async Task<RequestResponse> ChangeOrderStatusAsync(int orderId, OrderStatus orderStatus, string userId = "")
+    => await UseDbContextInstanceAsync(async context =>
+    {
+        var order = await context.Orders
+            .Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x => x.Category)
+            .Include(x => x.UserDelivered)
+            .Include(x => x.UserOrdered)
+            .FirstOrDefaultAsync(x => x.Id == orderId);
 
-                 if (order is null)
-                 {
-                     return _response.NoContent("This order could not be found", true);
-                 }
+        if (order is null)
+        {
+            return _response.NoContent("This order could not be found", true);
+        }
 
-                 order.Status = (int)orderStatus;
+        order.Status = (int)orderStatus;
 
-                 var saveStatus = await context.SaveChangesAsync() > 0;
+        if (orderStatus == OrderStatus.Taken && !string.IsNullOrEmpty(userId))
+        {
+            order.UserDeliveredId = userId;
+        }
 
-                 if (saveStatus)
-                 {
-                     var orderDTO = order.ToDTO();
+        if(orderStatus == OrderStatus.Started)
+        {
+            order.UserDeliveredId = null;
+        }
 
-                     _globalManager.OrderEvents?.OnOrderStatusChange?.Invoke(orderDTO);
-                 }
+        var saveStatus = await context.SaveChangesAsync() > 0;
 
-                 return saveStatus ?
-                     _response.Success() :
-                     _response.Fail();
-             });
+        if (saveStatus)
+        {
+
+            order = await context.Orders
+            .Include(x => x.OrderProducts).ThenInclude(x => x.Product).ThenInclude(x => x.Category)
+            .Include(x => x.UserDelivered)
+            .Include(x => x.UserOrdered)
+            .FirstOrDefaultAsync(x => x.Id == orderId);
+
+            var orderDTO = order.ToDTO();
+
+            _globalManager.OrderEvents?.OnOrderStatusChange?.Invoke(orderDTO);
+        }
+
+        return saveStatus ? _response.Success() : _response.Fail();
+    });
+
 }
 

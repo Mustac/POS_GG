@@ -20,7 +20,7 @@ namespace POS_OS_GG.Data
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<ApplicationUser>().HasIndex(x => x.CompanyId).IsUnique();
+            builder.Entity<ApplicationUser>().HasIndex(x => x.CompanyId).IsUnique(false);
             builder.Entity<Order>().Property(x=>x.UserDeliveredId).IsRequired(false);
             builder.Entity<Order>().Property(x => x.TimeDelivered).IsRequired(false);
             builder.Entity<Order>().Property(x => x.TimeOrderTaken).IsRequired(false);
