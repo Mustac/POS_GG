@@ -5,6 +5,7 @@
 @inject ProductService ProductService
 @inject AuthenticationStateProvider AuthProvider
 @inject OrderService OrderService
+@inject GlobalManager GlobalManager
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
 @inject MobileMenuService MobileMenuService
@@ -169,19 +170,21 @@
         </div>
     </div>
 
-    <div class="order-menu col-lg-5 @(mobileNavigation==MobileNavigation.History?"show-mobile-order-menu":"")">
-        <div class="bg-dark p-3 rounded ">
+    <div class="order-menu col-lg-5 @(mobileNavigation==MobileNavigation.History?"show-mobile-order-menu":"")" style="overflow:auto">
+       
+
+        <div class="bg-dark p-3 rounded mt-2 border border-success border-2">
             <div class="d-flex justify-content-between h5">
                 <div>
-                    <span>Order History</span>
+                    <span>Active Orders</span>
                 </div>
                 <div>@DateTime.UtcNow.Date.ToShortDateString()</div>
             </div>
             <hr class="my-2" />
             <MudExpansionPanels Elevation="0">
-                @foreach (var order in orders)
+                @foreach (var order in orders.Where(x=>x.OrderStatus == OrderStatus.Started || x.OrderStatus == OrderStatus.Taken).OrderBy(x=>x.OrderStatus))
                 {
-                    <MudExpansionPanel HideIcon="true">
+                    <MudExpansionPanel HideIcon="true" Class="border border-success border-2">
                         <TitleContent>
                             @("Order Time : " + @order.TimeOrdered.ToString("HH:mm"))
 
@@ -199,6 +202,69 @@
                             }
 
                             @* <i class="fa-solid fa-dolly float-end text-success"></i> *@
+                        </TitleContent>
+                        <ChildContent>
+                            <ul>
+                                @foreach (var product in order.OrderedProducts)
+                                {
+                                    <li class="order-product-list">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                @product.Name
+                                            </div>
+                                            <div>
+                                                @product.Quantity @product.Measurement.ToString()
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+
+                            @if (!string.IsNullOrEmpty(order.Message))
+                            {
+                                <MudPaper Class="mt-2 p-2" Outlined="true">
+                                    <h6>Message : </h6>
+                                    @order.Message
+                                </MudPaper>
+                            }
+
+                            <MudButton Color="Color.Error" @onclick="@(()=>RemoveOrderAsync(order.OrderId))" Class="float-end my-2" Disabled="@(order.OrderStatus!=OrderStatus.Started)">Delete</MudButton>
+                        </ChildContent>
+
+                    </MudExpansionPanel>
+
+
+                }
+            </MudExpansionPanels>
+        </div>
+
+
+        <div class="p-3 rounded mt-2" style="background-color:rgb(55,55,55); border:1px solid white;">
+            <div class="d-flex justify-content-between h5">
+                <div>
+                    <span>Finished Orders</span>
+                </div>
+                <div>@DateTime.UtcNow.Date.ToShortDateString()</div>
+            </div>
+            <hr class="my-2" />
+            <MudExpansionPanels DisableBorders="false" Elevation="0" >
+                @foreach (var order in orders.Where(x=>x.OrderStatus == OrderStatus.Delivered))
+                {
+                    <MudExpansionPanel HideIcon="true" Style="outline:2px solid white;">
+                        <TitleContent>
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    @("Order Time : " + @order.TimeOrdered.ToString("HH:mm"))
+                                </div>
+                                <div>
+                                    @if (order.TimeDelivered.HasValue)
+                                    {
+                                    <div class="text-success">
+                                        @("Order Delivered : " + @order.TimeDelivered.Value.ToString("HH:mm"))
+                                    </div>
+                                    }
+                                </div>
+                            </div>
                         </TitleContent>
                         <ChildContent>
                             <ul>
@@ -311,6 +377,8 @@
         }
 
         var fetchOrdersResponse = await OrderService.GetOrdersAsync(userId);
+
+        GlobalManager.OrderEvents.OnOrderStatusChange += OrderStatusChange;
 
         if (fetchOrdersResponse.IsSuccess)
             orders = fetchOrdersResponse.Data.ToList();
@@ -615,6 +683,21 @@
         }
     }
 
+    void OrderStatusChange(OrderDTO order)
+    {
+
+        var foundOrder = orders.FirstOrDefault(x => x.OrderId == order.OrderId);
+
+        if (foundOrder == null)
+            return;
+
+        foundOrder.OrderStatus = order.OrderStatus;
+        foundOrder.TimeDelivered = order.TimeDelivered;
+
+        InvokeAsync(StateHasChanged).Wait();
+
+    }
+
     void Reload()
     {
         NavigationManager.NavigateTo("/production/order", true);
@@ -654,6 +737,7 @@
             timer.Elapsed -= OnTimedEvent;
 
         MobileMenuService.OnMobileNavClicked -= MobileNavClicked;
+        GlobalManager.OrderEvents.OnOrderStatusChange -= OrderStatusChange;
     }
 
     public enum Loader

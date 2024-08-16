@@ -154,7 +154,7 @@
             };
 
         bool? result = await _mmbUpdateUser.Show();
-        StateHasChanged();
+        InvokeAsync(StateHasChanged).Wait();
     }
 
     private async void DeleteUser(UserInfo user)
@@ -166,7 +166,7 @@
         {
             var response = await UserManagerService.DeleteAsync(user.Id);
             UpdateFilter();
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         };
 
     }

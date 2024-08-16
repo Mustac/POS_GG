@@ -129,7 +129,7 @@
             orders.Remove(order);
         }
 
-        InvokeAsync(StateHasChanged);
+        InvokeAsync(StateHasChanged).Wait();
 
 
     }

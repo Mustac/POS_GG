@@ -167,6 +167,11 @@ public class OrderService : BaseService
             order.UserDeliveredId = null;
         }
 
+        if(orderStatus == OrderStatus.Delivered)
+        {
+            order.TimeDelivered = DateTime.UtcNow;
+        }
+
         var saveStatus = await context.SaveChangesAsync() > 0;
 
         if (saveStatus)

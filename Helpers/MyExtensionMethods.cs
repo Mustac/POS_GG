@@ -49,6 +49,7 @@ public static class MyExtensionMethods
             OrderId = order.Id,
 
             TimeOrdered = order.TimeOrdered.AddHours(2),
+            TimeDelivered = order.TimeDelivered?.AddHours(2),
             OrderStatus = (OrderStatus)order.Status,
             OrderedProducts = order.OrderProducts.Select(op => new ProductInfo
             {
