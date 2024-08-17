@@ -90,7 +90,7 @@
         {
             currentTime = DateTime.Now;
             StateHasChanged();
-        });
+        }).Wait();
     }
 
     public async Task UserOrderCancel()
@@ -113,7 +113,7 @@
         InvokeAsync(() =>
         {
             StateHasChanged();
-        });
+        }).Wait();
     }
 
     public void OrderStatusChange(OrderDTO orderDTO)

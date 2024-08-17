@@ -187,18 +187,19 @@
                     <MudExpansionPanel HideIcon="true" Class="border border-success border-2">
                         <TitleContent>
                             @("Order Time : " + @order.TimeOrdered.ToString("HH:mm"))
-
+@* 
                             @if (order.OrderStatus == OrderStatus.Started)
                             {
                                 <div class="float-end">
                                     <i class="fa-solid fa-list-ul"></i>
                                     <i class="fa-solid fa-arrow-right"></i>
                                 </div>
-                            }
+                            } *@
 
                             @if (order.OrderStatus == OrderStatus.Taken)
                             {
-                                <i class="fa-solid fa-dolly float-end text-success"></i>
+                                    <span class="float-end">@order.UserDeliveredName <i class="fa-solid fa-dolly text-success"></i></span>
+
                             }
 
                             @* <i class="fa-solid fa-dolly float-end text-success"></i> *@
@@ -252,16 +253,27 @@
                 {
                     <MudExpansionPanel HideIcon="true" Style="outline:2px solid white;">
                         <TitleContent>
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    @("Order Time : " + @order.TimeOrdered.ToString("HH:mm"))
+                            <div class="">
+                                <div class="d-flex justify-content-between border border-0 border-bottom pb-1 mb-1">
+                                    <div>Ordered Time :</div>
+                                    <div>@order.TimeOrdered.ToString("HH:mm")</div>
                                 </div>
                                 <div>
                                     @if (order.TimeDelivered.HasValue)
                                     {
-                                    <div class="text-success">
-                                        @("Order Delivered : " + @order.TimeDelivered.Value.ToString("HH:mm"))
+                                        <div class="d-flex justify-content-between border border-0 border-bottom pb-1 mb-1">
+                                            <div>Delivery Time : </div>
+                                            <div>@order.TimeDelivered.Value.ToString("HH:mm")</div>
                                     </div>
+                                    }
+                                </div>
+                                <div>
+                                    @if (order.TimeDelivered.HasValue)
+                                    {
+                                        <div class="d-flex justify-content-between border border-0 border-bottom pb-1">
+                                            <div>Delivered By :</div>
+                                            <div>@order.UserDeliveredName</div>
+                                        </div>
                                     }
                                 </div>
                             </div>
@@ -545,8 +557,6 @@
         text = "";
 
         await ClearSearchAsync();
-
-        StateHasChanged();
     }
 
     async Task AddProductToCartAsync(ProductInfo product)
@@ -562,7 +572,6 @@
                 Measurement = Measurement.Pcs
             });
         await ClearSearchAsync();
-        StateHasChanged();
     }
 
     async Task AddProductToCartWithEnterAsync(ProductInfo product, string key)
@@ -623,7 +632,7 @@
         HideAddButton();
         showDropdown = false;
         foundProducts = new();
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
 
@@ -683,7 +692,7 @@
         }
     }
 
-    void OrderStatusChange(OrderDTO order)
+    async void OrderStatusChange(OrderDTO order)
     {
 
         var foundOrder = orders.FirstOrDefault(x => x.OrderId == order.OrderId);
@@ -693,6 +702,7 @@
 
         foundOrder.OrderStatus = order.OrderStatus;
         foundOrder.TimeDelivered = order.TimeDelivered;
+        foundOrder.UserDeliveredName = order.UserDeliveredName;
 
         InvokeAsync(StateHasChanged).Wait();
 

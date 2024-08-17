@@ -81,7 +81,8 @@ public static class MyExtensionMethods
 
     public static int GetPassedMinutes(this DateTime startTime)
     {
-        return (int)(DateTime.UtcNow - startTime).TotalMinutes;
+        var time = Math.Abs((int)(DateTime.UtcNow.AddHours(2) - startTime).TotalMinutes);
+        return time;
     }
 
 
