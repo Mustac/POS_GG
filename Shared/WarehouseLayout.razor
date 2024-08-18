@@ -12,8 +12,10 @@
     @Body
 </div>
 <div class="mobile-menu text-dark">
-    <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.Order))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.Order?"active":"")"><i class="fa-solid fa-list"></i> Order</div>
+    <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.Order))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.Order?"active":"")"><i class="fa-solid fa-list"></i> Orders</div>
+    <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.TakenOrders))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.TakenOrders?"active":"")"><i class="fa-solid fa-list"></i> Taken</div>
     <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.History))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.History?"active":"")"><i class="fa-solid fa-list-check"></i> History</div>
+    <div @onclick="@(()=>MobileMenuService.MobileNavClicked(Helpers.MobileNavigation.Settings))" class="@(MobileMenuService.MobileNavigation==Helpers.MobileNavigation.Settings?"active":"") no-select"><i class="fa-solid fa-bars"></i></div>
 </div>
 
 

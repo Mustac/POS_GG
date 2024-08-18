@@ -64,15 +64,26 @@
 
     private List<OrderDTO> orders= new List<OrderDTO>();
 
+    private int secondTimer;
+
+    [Parameter]
+    public int SecondTimer
+    {
+        get => secondTimer;
+        set
+        {
+              InvokeAsync(StateHasChanged).Wait();
+              secondTimer = value;
+        }
+    }
+
+
     Timer timer;
     DateTime currentTime;
 
     protected async override Task OnInitializedAsync()
     {
-        currentTime = DateTime.Now;
-        timer = new Timer(10000); // Set the timer to tick every 10 seconds
-        timer.Elapsed += UpdateTime;
-        timer.Start();
+
 
         GlobalManager.OrderEvents.OnUserOrderCancel += UserOrderCancel;
         GlobalManager.OrderEvents.OnOrderMade += AddToOrder;
@@ -82,15 +93,6 @@
 
         if (orderResponse.IsSuccess)
             orders = orderResponse.Data;
-    }
-
-    private void UpdateTime(object source, ElapsedEventArgs e)
-    {
-        InvokeAsync(() =>
-        {
-            currentTime = DateTime.Now;
-            StateHasChanged();
-        }).Wait();
     }
 
     public async Task UserOrderCancel()
@@ -104,7 +106,6 @@
                {
                    StateHasChanged();
                });
-
     }
 
     public void AddToOrder(List<OrderDTO> orders)

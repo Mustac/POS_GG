@@ -182,7 +182,7 @@
             </div>
             <hr class="my-2" />
             <MudExpansionPanels Elevation="0">
-                @foreach (var order in orders.Where(x=>x.OrderStatus == OrderStatus.Started || x.OrderStatus == OrderStatus.Taken).OrderBy(x=>x.OrderStatus))
+                @foreach (var order in orders.Where(x=>x.OrderStatus == OrderStatus.Started || x.OrderStatus == OrderStatus.Taken).OrderByDescending(x=>x.OrderStatus))
                 {
                     <MudExpansionPanel HideIcon="true" Class="border border-success border-2">
                         <TitleContent>

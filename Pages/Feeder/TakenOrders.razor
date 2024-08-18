@@ -61,6 +61,19 @@
 </AuthorizeView>
 
 @code {
+    private int secondTimer;
+
+    [Parameter]
+    public int SecondTimer{
+        get => secondTimer;
+        set
+        {
+           
+            InvokeAsync(StateHasChanged).Wait();
+            secondTimer = value;
+        }
+    }
+
     List<OrderDTO> takenOrders = new List<OrderDTO>();
 
     protected async override Task OnInitializedAsync()

@@ -4,6 +4,7 @@
     {
         Order,
         History,
-        Settings
+        Settings,
+        TakenOrders
     }
 }
